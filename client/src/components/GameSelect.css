@@ -4,7 +4,6 @@
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   color: white;
 }
@@ -78,19 +77,10 @@
 
 @media (max-width: 768px) {
   .games-grid {
-    gap: 1rem;
+    gap: 1.5rem;
   }
 
-  .game-circle {
-    width: 250px;
-    height: 250px;
-  }
-
-  .game-circle h2 {
-    font-size: 1.5rem;
-  }
-
-  .game-circle p {
-    font-size: 0.9rem;
+  .games-container {
+    padding: 1rem;
   }
 }

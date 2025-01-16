@@ -1,0 +1,126 @@
+.waiting-room-container {
+  min-height: calc(100vh - 60px);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.waiting-room-container.dark {
+  background-color: var(--dark-bg);
+  color: var(--light-text);
+}
+
+.waiting-room-container.light {
+  background-color: var(--light-bg);
+  color: var(--dark-text);
+}
+
+.waiting-room-container h1 {
+  font-size: 2.5rem;
+  margin: 1rem 0 3rem 0;
+  text-align: center;
+  font-weight: bold;
+  font-family: var(--font);
+}
+
+.waiting-room-box {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.waiting-room-box.light {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.room-code-display {
+  text-align: center;
+}
+
+.room-code-display h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-family: var(--font);
+}
+
+.room-code-display .code {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #2196f3;
+  margin: 1rem 0;
+  font-family: var(--font);
+}
+
+.room-code-display p {
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font);
+}
+
+.room-code-display.light p {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.category-selection {
+  text-align: center;
+}
+
+.category-selection h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-family: var(--font);
+}
+
+.category-select {
+  width: 100%;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+.category-select.light {
+  border-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.category-select:focus {
+  outline: none;
+  border-color: #2196f3;
+}
+
+.status-message {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #2196f3;
+  font-family: var(--font);
+}
+
+.start-button {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #2196f3;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font);
+  width: 100%;
+}
+
+.start-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

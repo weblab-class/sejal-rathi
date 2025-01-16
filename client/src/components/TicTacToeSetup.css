@@ -4,142 +4,99 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #050a4a;
-  color: white;
+}
+
+.setup-container.dark {
+  background-color: var(--dark-bg);
+  color: var(--light-text);
+}
+
+.setup-container.light {
+  background-color: var(--light-bg);
+  color: var(--dark-text);
 }
 
 .setup-container h1 {
-  font-size: 3rem;
-  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  margin: 1rem 0 3rem 0;
   text-align: center;
+  font-weight: bold;
+  font-family: var(--font);
 }
 
-.setup-section {
+.setup-box {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 12px;
   width: 100%;
   max-width: 500px;
-  margin-bottom: 2rem;
-  text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
-.setup-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+.setup-box.light {
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
-.mode-buttons {
+.setup-options {
   display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-.mode-buttons button {
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.mode-buttons button:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.mode-buttons button.active {
-  background: #4caf50;
-}
-
-.mode-buttons button.active:hover {
-  background: #45a049;
-}
-
-select {
-  width: 100%;
-  max-width: 300px;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-select:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.time-selector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.time-selector span {
-  font-size: 1.5rem;
-  min-width: 2ch;
-}
-
-.time-button {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.time-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-input {
-  width: 100%;
-  max-width: 300px;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  font-size: 1rem;
-  text-align: center;
-}
-
-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.start-button {
-  margin-top: 2rem;
+.setup-button {
   padding: 1rem 2rem;
-  border: none;
-  border-radius: 4px;
-  background: #4caf50;
-  color: white;
   font-size: 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #2196f3;
+  color: white;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  font-family: var(--font);
+  width: 100%;
 }
 
-.start-button:hover {
-  background: #45a049;
+.setup-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.start-button:disabled {
-  background: rgba(255, 255, 255, 0.1);
-  cursor: not-allowed;
+.join-room {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.room-code-input {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-family: var(--font);
+  text-align: center;
+}
+
+.room-code-input.light {
+  border-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--dark-text);
+}
+
+.room-code-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font);
+}
+
+.room-code-input.light::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.room-code-input:focus {
+  outline: none;
+  border-color: #2196f3;
 }
 
 @media (max-width: 600px) {
@@ -149,13 +106,6 @@ input:focus {
 
   .setup-container h1 {
     font-size: 2rem;
-  }
-
-  .mode-buttons {
-    flex-direction: column;
-  }
-
-  .mode-buttons button {
-    width: 100%;
+    margin: 0.5rem 0 2rem 0;
   }
 }

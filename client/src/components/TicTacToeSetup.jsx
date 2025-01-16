@@ -6,100 +6,63 @@ import "./TicTacToeSetup.css";
 const TicTacToeSetup = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
+  const [joinCode, setJoinCode] = useState("");
 
-  const [gameMode, setGameMode] = useState("single");
-  const [category, setCategory] = useState("easy");
-  const [timeLimit, setTimeLimit] = useState(5);
-  const [roomCode, setRoomCode] = useState("");
+  const handleCreateRoom = () => {
+    const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    navigate("/tictactoe/waiting", {
+      state: {
+        gameCode: gameCode,
+      },
+    });
+  };
 
-  const handleStartGame = () => {
-    const gameConfig = {
-      mode: gameMode,
-      category: category,
-      timeLimit: timeLimit,
-      roomCode: gameMode === "join" ? roomCode : null,
-    };
+  const handleJoinRoom = () => {
+    if (joinCode.trim()) {
+      navigate("/tictactoe/game", {
+        state: {
+          mode: "two-player",
+          gameCode: joinCode.trim().toUpperCase(),
+        },
+      });
+    }
+  };
 
-    navigate("/tictactoe/game", { state: gameConfig });
+  const handleSinglePlayer = () => {
+    navigate("/tictactoe/game", {
+      state: {
+        mode: "single",
+      },
+    });
   };
 
   return (
     <div className={`setup-container ${isDarkMode ? "dark" : "light"}`}>
       <h1>Game Setup</h1>
+      <div className="setup-box">
+        <div className="setup-options">
+          <button className="setup-button" onClick={handleCreateRoom}>
+            Create a Room
+          </button>
 
-      <div className="setup-section">
-        <h2>Game Mode</h2>
-        <div className="mode-buttons">
-          <button
-            className={gameMode === "single" ? "active" : ""}
-            onClick={() => setGameMode("single")}
-          >
+          <div className="join-room">
+            <input
+              type="text"
+              placeholder="Enter Room Code"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              className="room-code-input"
+            />
+            <button className="setup-button" onClick={handleJoinRoom}>
+              Join Room
+            </button>
+          </div>
+
+          <button className="setup-button" onClick={handleSinglePlayer}>
             Single Player
-          </button>
-          <button
-            className={gameMode === "create" ? "active" : ""}
-            onClick={() => setGameMode("create")}
-          >
-            Create Room
-          </button>
-          <button
-            className={gameMode === "join" ? "active" : ""}
-            onClick={() => setGameMode("join")}
-          >
-            Join Room
           </button>
         </div>
       </div>
-
-      {gameMode === "join" ? (
-        <div className="setup-section">
-          <h2>Room Code</h2>
-          <input
-            type="text"
-            placeholder="Enter room code"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-          />
-        </div>
-      ) : (
-        <>
-          <div className="setup-section">
-            <h2>Category</h2>
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </div>
-
-          <div className="setup-section">
-            <h2>Time Limit (minutes)</h2>
-            <div className="time-selector">
-              <button
-                onClick={() => setTimeLimit((prev) => Math.max(1, prev - 1))}
-                className="time-button"
-              >
-                -
-              </button>
-              <span>{timeLimit}</span>
-              <button
-                onClick={() => setTimeLimit((prev) => Math.min(10, prev + 1))}
-                className="time-button"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      <button
-        className="start-button"
-        onClick={handleStartGame}
-        disabled={gameMode === "join" && !roomCode}
-      >
-        Start Game
-      </button>
     </div>
   );
 };

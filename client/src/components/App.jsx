@@ -7,6 +7,7 @@ import Navbar from "./Navbar";
 import Home from "./Home";
 import GameSelect from "./GameSelect";
 import TicTacToeSetup from "./TicTacToeSetup";
+import TicTacToeWaitingRoom from "./TicTacToeWaitingRoom";
 import TicTacToe from "./TicTacToe";
 import Settings from "./Settings";
 import Profile from "./Profile";
@@ -59,6 +60,7 @@ const App = () => {
             <Route path="/" element={<Home userId={userId} handleLogin={handleLogin} />} />
             <Route path="/games" element={<GameSelect />} />
             <Route path="/tictactoe/setup" element={<TicTacToeSetup />} />
+            <Route path="/tictactoe/waiting" element={<TicTacToeWaitingRoom />} />
             <Route path="/tictactoe/game" element={<TicTacToe />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
