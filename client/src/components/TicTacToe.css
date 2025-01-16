@@ -1,0 +1,157 @@
+.game-container {
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  min-height: calc(100vh - 60px);
+  background: #050a4a;
+  color: white;
+}
+
+.game-container h1 {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.category {
+  font-size: 1.2rem;
+  margin: 1rem 0;
+  color: #ffffff;
+}
+
+.timer {
+  font-size: 1.5rem;
+  margin: 1rem 0;
+  color: #ffffff;
+}
+
+.game-status {
+  font-size: 1.2rem;
+  margin: 1rem 0;
+  color: #ffffff;
+}
+
+.play-again {
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background: #4caf50;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.play-again:hover {
+  background: #45a049;
+}
+
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 2rem auto;
+  max-width: 500px;
+}
+
+.cell {
+  aspect-ratio: 1;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  color: #000000;
+}
+
+.cell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cell.solved {
+  cursor: not-allowed;
+}
+
+.cell.solved.X {
+  background: #4caf50;
+  color: white;
+}
+
+.cell.solved.O {
+  background: #2196f3;
+  color: white;
+}
+
+.loading {
+  font-size: 1.2rem;
+  color: #ffffff;
+  margin: 2rem 0;
+}
+
+.error {
+  color: #f44336;
+  margin: 2rem 0;
+  font-size: 1.2rem;
+}
+
+.waiting {
+  margin: 1rem 0;
+  padding: 1.5rem;
+  background: rgba(248, 249, 250, 0.1);
+  border-radius: 8px;
+  font-size: 1.2rem;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-code {
+  margin: 1rem 0;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4caf50;
+  letter-spacing: 4px;
+}
+
+.game-code-instructions {
+  color: #ffffff;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.player-info {
+  font-size: 1.2rem;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  .game-container {
+    padding: 1rem;
+  }
+
+  .game-container h1 {
+    font-size: 2rem;
+  }
+
+  .game-board {
+    gap: 5px;
+  }
+
+  .cell {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .game-code {
+    font-size: 1.5rem;
+  }
+}

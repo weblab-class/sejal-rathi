@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="100" cy="100" r="70" />
+    <ellipse cx="100" cy="100" rx="70" ry="20" />
+    <path d="M100,30 L100,170" />
+    <text x="40" y="180" fill="currentColor" font-family="monospace">V = 4/3πr³</text>
+  </g>
+</svg>

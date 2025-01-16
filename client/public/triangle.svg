@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M40,160 L160,160 L160,40 Z" />
+    <text x="90" y="100" fill="currentColor" font-size="20">θ</text>
+    <text x="170" y="100" fill="currentColor" font-size="12">hyp</text>
+    <text x="100" y="180" fill="currentColor" font-size="12">adj</text>
+    <text x="60" y="120" fill="currentColor" font-size="12">opp</text>
+    <text x="40" y="190" fill="currentColor" font-family="monospace">sin(θ) = opp/hyp</text>
+  </g>
+</svg>

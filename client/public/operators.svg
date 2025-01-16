@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="20" y="20" width="60" height="60" rx="5" />
+    <text x="40" y="60" fill="currentColor" font-size="30">+</text>
+    <rect x="120" y="20" width="60" height="60" rx="5" />
+    <text x="140" y="60" fill="currentColor" font-size="30">-</text>
+    <rect x="20" y="120" width="60" height="60" rx="5" />
+    <text x="40" y="160" fill="currentColor" font-size="30">÷</text>
+    <rect x="120" y="120" width="60" height="60" rx="5" />
+    <text x="140" y="160" fill="currentColor" font-size="30">×</text>
+  </g>
+</svg>

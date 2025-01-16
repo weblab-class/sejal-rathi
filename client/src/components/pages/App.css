@@ -1,0 +1,73 @@
+:root {
+  --dark-bg: #111344;
+  --light-bg: #DAE0F2;
+  --dark-text: #111344;
+  --light-text: #DAE0F2;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--dark-bg);
+  color: var(--light-text);
+  transition: background-color 0.3s ease;
+}
+
+body.light-mode {
+  background-color: var(--light-bg);
+  color: var(--dark-text);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.u-link {
+  color: var(--primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.u-link:hover {
+  color: var(--primary--dim);
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #111827;
+  color: white;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Add smooth transitions */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+/* Improve input focus states */
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M50,50 L150,50 L150,150 L50,150 Z" />
+    <path d="M50,50 L75,25 L175,25 L150,50" />
+    <path d="M150,150 L175,125 L175,25" />
+    <text x="60" y="180" fill="currentColor" font-family="monospace">V = s³</text>
+  </g>
+</svg>
