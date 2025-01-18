@@ -17,16 +17,18 @@
   color: var(--dark-text);
 }
 
-.navbar-left, .navbar-right {
+.navbar-left,
+.navbar-right {
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 
 .navbar-link {
   text-decoration: none;
   color: inherit;
-  font-size: 1.1rem;
   transition: opacity 0.3s ease;
 }
 

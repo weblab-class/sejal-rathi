@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { get } from "../utilities";
+import { get, post } from "../utilities";
 import { socket } from "../client-socket";
 import { useTheme } from "./context/ThemeContext";
 import "./TicTacToe.css";
@@ -8,6 +8,8 @@ import "./TicTacToe.css";
 const TicTacToe = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [userId, setUserId] = useState(null);
 
   const { category = "easy", mode = "two-player", timeLimit = 5, gameCode } = location.state || {};
 
@@ -54,6 +56,13 @@ const TicTacToe = () => {
 
     fetchQuestions();
   }, [category]);
+
+  useEffect(() => {
+    // Get current user ID
+    get("/api/whoami").then((user) => {
+      setUserId(user._id);
+    });
+  }, []);
 
   useEffect(() => {
     // Join game room when component mounts
@@ -115,6 +124,37 @@ const TicTacToe = () => {
       return () => clearInterval(timer);
     }
   }, [mode, gameOver, timeLeft]);
+
+  const updateStats = async (result) => {
+    if (userId && !userId.startsWith("guest_")) {
+      try {
+        await post("/api/stats/tictactoe", { result });
+      } catch (err) {
+        console.error("Failed to update stats:", err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (gameOver && !loading) {
+      if (mode === "single") {
+        if (timeLeft === 0) {
+          updateStats("loss");
+        } else {
+          console.log("reached the win updated stats");
+          updateStats("win");
+        }
+      } else if (mode === "two-player" && winner) {
+        if (winner === playerSymbol) {
+          updateStats("win");
+        } else {
+          updateStats("loss");
+        }
+      } else if (!winner && gameOver) {
+        updateStats("tie");
+      }
+    }
+  }, [gameOver, winner, mode, timeLeft, loading, playerSymbol]);
 
   const checkAnswer = (question) => {
     const currentQ = questions.find((q) => q.question === question);
@@ -204,7 +244,7 @@ const TicTacToe = () => {
 
   if (loading) {
     return (
-      <div className={`game-container ${isDarkMode ? 'dark' : 'light'}`}>
+      <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
         <div className="loading">Loading questions...</div>
       </div>
     );
@@ -212,7 +252,7 @@ const TicTacToe = () => {
 
   if (error) {
     return (
-      <div className={`game-container ${isDarkMode ? 'dark' : 'light'}`}>
+      <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
         <div className="error">{error}</div>
         <button className="play-again" onClick={() => navigate("/tictactoe/setup")}>
           Try Again
@@ -222,7 +262,7 @@ const TicTacToe = () => {
   }
 
   return (
-    <div className={`game-container ${isDarkMode ? 'dark' : 'light'}`}>
+    <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
       <h1>tic-tac-toe</h1>
 
       <div className="category">category: {category.replace(/([A-Z])/g, " $1").toLowerCase()}</div>

@@ -10,7 +10,7 @@ const Navbar = ({ userId, handleLogout }) => {
     <nav className={`navbar ${isDarkMode ? "light" : "dark"}`}>
       <div className="navbar-left">
         <Link to="/games" className="navbar-link">
-          Games
+          x factor games
         </Link>
       </div>
       <div className="navbar-right">

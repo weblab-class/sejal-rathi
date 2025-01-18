@@ -3,8 +3,13 @@
   padding: 2rem;
   text-align: center;
   min-height: calc(100vh - 60px);
-  background: #050a4a;
-  color: white;
+  background: var(--light-container);
+  color: var(--light-text);
+}
+
+body.dark .game-container {
+  background: var(--dark-container);
+  color: var(--dark-text);
 }
 
 .game-container h1 {
@@ -15,19 +20,31 @@
 .category {
   font-size: 1.2rem;
   margin: 1rem 0;
-  color: #ffffff;
+  color: var(--light-text);
+}
+
+body.dark .category {
+  color: var(--dark-text);
 }
 
 .timer {
   font-size: 1.5rem;
   margin: 1rem 0;
-  color: #ffffff;
+  color: var(--light-text);
+}
+
+body.dark .timer {
+  color: var(--dark-text);
 }
 
 .game-status {
   font-size: 1.2rem;
   margin: 1rem 0;
-  color: #ffffff;
+  color: var(--light-text);
+}
+
+body.dark .game-status {
+  color: var(--dark-text);
 }
 
 .play-again {
@@ -35,7 +52,7 @@
   padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 4px;
-  background: #4caf50;
+  background: var(--primary);
   color: white;
   cursor: pointer;
   font-size: 1rem;
@@ -43,7 +60,7 @@
 }
 
 .play-again:hover {
-  background: #45a049;
+  background: var(--primary-dim);
 }
 
 .game-board {
@@ -56,7 +73,7 @@
 
 .cell {
   aspect-ratio: 1;
-  background: #f5f5f5;
+  background: var(--light-bg);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -69,7 +86,12 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
-  color: #000000;
+  color: var(--light-text);
+}
+
+body.dark .cell {
+  background: var(--dark-bg);
+  color: var(--dark-text);
 }
 
 .cell:hover {
@@ -82,19 +104,23 @@
 }
 
 .cell.solved.X {
-  background: #4caf50;
+  background: #e74c3c;
   color: white;
 }
 
 .cell.solved.O {
-  background: #2196f3;
+  background: #3498db;
   color: white;
 }
 
 .loading {
   font-size: 1.2rem;
-  color: #ffffff;
+  color: var(--light-text);
   margin: 2rem 0;
+}
+
+body.dark .loading {
+  color: var(--dark-text);
 }
 
 .error {
@@ -109,28 +135,41 @@
   background: rgba(248, 249, 250, 0.1);
   border-radius: 8px;
   font-size: 1.2rem;
-  color: #ffffff;
+  color: var(--light-text);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .waiting {
+  background: rgba(30, 30, 30, 0.1);
+  color: var(--dark-text);
 }
 
 .game-code {
   margin: 1rem 0;
   font-size: 2rem;
   font-weight: bold;
-  color: #4caf50;
+  color: var(--primary);
   letter-spacing: 4px;
 }
 
 .game-code-instructions {
-  color: #ffffff;
+  color: var(--light-text);
   font-size: 1rem;
   margin-top: 0.5rem;
 }
 
+body.dark .game-code-instructions {
+  color: var(--dark-text);
+}
+
 .player-info {
   font-size: 1.2rem;
-  color: #ffffff;
+  color: var(--light-text);
   font-weight: bold;
+}
+
+body.dark .player-info {
+  color: var(--dark-text);
 }
 
 @media (max-width: 600px) {

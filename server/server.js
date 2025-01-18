@@ -22,75 +22,91 @@ validator.checkSetup();
 require("dotenv").config();
 
 //import libraries needed for the webserver to work!
+const express = require("express");
 const http = require("http");
-const express = require("express"); // backend framework for our node server.
-const session = require("express-session"); // library that stores info about each connected user
-const mongoose = require("mongoose"); // library to connect to MongoDB
-const path = require("path"); // provide utilities for working with file and directory paths
+const path = require("path");
+const session = require("express-session");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const socketManager = require("./server-socket");
 
 const api = require("./api");
 const auth = require("./auth");
 
-// socket stuff
-const socketManager = require("./server-socket");
-
-// Server configuration below
-// TODO change connection URL after setting up your team database
-const mongoConnectionURL = process.env.MONGO_SRV;
-// TODO change database name to the name you chose
-const databaseName = "Cluster0";
-
-// mongoose 7 warning
-mongoose.set("strictQuery", false);
-
-// connect to mongodb
-mongoose
-  .connect(mongoConnectionURL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    dbName: databaseName,
-  })
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.log(`Error connecting to MongoDB: ${err}`));
-
-// create a new express server
+// Server configuration
 const app = express();
-app.use(validator.checkRoutes);
+const server = http.createServer(app);
 
-// allow us to process POST requests
-app.use(express.json());
-
-// set up a session, which will persist login data across requests
+// Enable CORS
 app.use(
-  session({
-    // TODO: add a SESSION_SECRET string in your .env file, and replace the secret with process.env.SESSION_SECRET
-    secret: "session-secret",
-    resave: false,
-    saveUninitialized: false,
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["set-cookie"],
   })
 );
 
-// this checks if the user is logged in, and populates "req.user"
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Session configuration
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || "session-secret",
+  resave: false,
+  saveUninitialized: false,
+});
+
+app.use(sessionMiddleware);
+
+// Auth middleware
 app.use(auth.populateCurrentUser);
 
-// connect user-defined routes
+// API routes
 app.use("/api", api);
+app.use("/auth", auth.router);
 
-// load the compiled react files, which will serve /index.html and /bundle.js
+// Initialize socket
+socketManager.init(server);
+
+// Serve static files
 const reactPath = path.resolve(__dirname, "..", "client", "dist");
 app.use(express.static(reactPath));
 
-// for all other routes, render index.html and let react router handle it
+// Handle React routing
 app.get("*", (req, res) => {
-  res.sendFile(path.join(reactPath, "index.html"), (err) => {
-    if (err) {
-      console.log("Error sending client/dist/index.html:", err.status || 500);
-      res
-        .status(err.status || 500)
-        .send("Error sending client/dist/index.html - have you run `npm run build`?");
-    }
+  res.sendFile(path.join(reactPath, "index.html"));
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Server error:", err);
+  res.status(500).json({
+    error: "Internal Server Error",
+    message: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
+
+// MongoDB connection
+mongoose
+  .connect(process.env.MONGO_SRV, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    dbName: "Cluster0",
+  })
+  .then(() => {
+    console.log("Connected to MongoDB");
+    const port = process.env.PORT || 3000;
+    server.listen(port, () => {
+      console.log(`Server running on port: ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Error connecting to MongoDB:", err);
+    process.exit(1);
+  });
 
 // any server errors cause this function to run
 app.use((err, req, res, next) => {
@@ -106,13 +122,4 @@ app.use((err, req, res, next) => {
     status: status,
     message: err.message,
   });
-});
-
-// hardcode port to 3000 for now
-const port = 3000;
-const server = http.Server(app);
-socketManager.init(server);
-
-server.listen(port, () => {
-  console.log(`Server running on port: ${port}`);
 });

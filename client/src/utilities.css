@@ -18,29 +18,35 @@
 @import url("https://fonts.googleapis.com/css?family=Roboto&display=swap");
 
 :root {
-  --primary: #396dff;
-  --primary--dim: #6987db;
+  --primary: #4285f4;
+  --primary-dim: rgb(66, 133, 244, 0.85);
   --darkgrey: #d4d4d4;
   --medgrey: #e0e0e0;
   --grey: #f7f7f7;
   --white: #fff;
-  --base-space: 8px;
+  --black: #000;
 
-  --xs: 4px;
-  --s: 8px;
-  --m: 16px;
-  --l: 24px;
+  /* Light theme colors */
+  --light-text: #333;
+  
+  /* Dark theme colors */
+  --dark-text: #ffffff;
 }
 
 body {
   margin: 0;
   padding: 0;
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  color: var(--light-text);
+  transition: color 0.3s ease;
   min-height: 100vh;
   background: url('https://raw.githubusercontent.com/sejal-rathi/sejal-rathi/main/space.jpg') no-repeat center center fixed;
   background-size: cover;
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
-  color: var(--white);
+}
+
+body.dark {
+  color: var(--dark-text);
 }
 
 form {
@@ -91,7 +97,25 @@ form {
 }
 
 .u-link:hover {
-  color: var(--primary--dim);
+  color: var(--primary-dim);
+}
+
+/* Dark mode overrides for text */
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark p,
+body.dark span,
+body.dark div {
+  color: var(--dark-text);
+}
+
+body.dark .u-link {
+  color: var(--primary-dim);
+}
+
+body.dark .u-link:hover {
+  color: var(--primary);
 }
 
 .app-container {

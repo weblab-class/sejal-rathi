@@ -12,7 +12,7 @@ const Home = ({ userId, handleLogin }) => {
   }
 
   return (
-    <div className={`home-container ${isDarkMode ? 'dark' : 'light'}`}>
+    <div className={`home-container ${isDarkMode ? "dark" : "light"}`}>
       <div className="content">
         <h1>x factor puzzles</h1>
         <div className="auth-section">
@@ -24,10 +24,7 @@ const Home = ({ userId, handleLogin }) => {
             useOneTap
             type="standard"
           />
-          <button
-            className="guest-button"
-            onClick={() => handleLogin({ credential: "guest" })}
-          >
+          <button className="guest-button" onClick={() => handleLogin({ credential: "guest" })}>
             Play as Guest
           </button>
         </div>

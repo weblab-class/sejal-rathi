@@ -1,16 +1,14 @@
 .settings-container {
   min-height: calc(100vh - 60px);
   padding: 2rem;
-  transition: background-color 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 .settings-container.dark {
-  background-color: var(--dark-bg);
   color: var(--light-text);
 }
 
 .settings-container.light {
-  background-color: var(--light-bg);
   color: var(--dark-text);
 }
 
@@ -28,8 +26,15 @@
 .settings-box {
   padding: 1.5rem;
   border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+}
+
+.settings-container.dark .settings-box {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.settings-container.light .settings-box {
+  background-color: rgba(77, 119, 234, 0.15);
 }
 
 .setting-item {

@@ -12,7 +12,7 @@ const QuestionSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ["easy", "normal", "difficult", "calculus", "word"],
+    enum: ["easy", "difficult", "hard", "calculus", "word"],
   },
   createdAt: {
     type: Date,

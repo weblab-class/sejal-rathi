@@ -1,14 +1,53 @@
-import React from "react";
-import { useTheme } from "./context/ThemeContext";
-import { useSound } from "./context/SoundContext";
+import React, { useState, useEffect } from "react";
+import { get, post } from "../utilities";
 import "./Settings.css";
 
-const Settings = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
-  const { isSoundEnabled, toggleSound } = useSound();
+const Settings = ({ userId }) => {
+  const [settings, setSettings] = useState({
+    darkMode: false,
+    soundEnabled: true,
+  });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await get("/api/settings");
+        if (response.settings) {
+          setSettings(response.settings);
+        }
+      } catch (error) {
+        console.log("Error loading settings:", error);
+      }
+    };
+    
+    if (userId) {
+      loadSettings();
+    }
+  }, [userId]);
+
+  const updateSetting = async (key, value) => {
+    try {
+      const newSettings = {
+        ...settings,
+        [key]: value,
+      };
+      setSettings(newSettings);
+      const response = await post("/api/settings", { [key]: value });
+      if (!response.settings) {
+        setSettings(settings);
+      }
+    } catch (error) {
+      console.log(`Error updating ${key}:`, error);
+      setSettings(settings);
+    }
+  };
+
+  if (!userId) {
+    return <div>Please log in to view settings</div>;
+  }
 
   return (
-    <div className={`settings-container ${isDarkMode ? "dark" : "light"}`}>
+    <div className={`settings-container ${settings.darkMode ? "dark" : "light"}`}>
       <h1>Settings</h1>
       <div className="settings-content">
         <div className="settings-box">
@@ -20,8 +59,8 @@ const Settings = () => {
             <label className="switch">
               <input
                 type="checkbox"
-                checked={isDarkMode}
-                onChange={toggleTheme}
+                checked={settings.darkMode}
+                onChange={(e) => updateSetting("darkMode", e.target.checked)}
               />
               <span className="slider round"></span>
             </label>
@@ -37,8 +76,8 @@ const Settings = () => {
             <label className="switch">
               <input
                 type="checkbox"
-                checked={isSoundEnabled}
-                onChange={toggleSound}
+                checked={settings.soundEnabled}
+                onChange={(e) => updateSetting("soundEnabled", e.target.checked)}
               />
               <span className="slider round"></span>
             </label>

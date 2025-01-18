@@ -1,30 +1,67 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "./context/ThemeContext";
+import { post } from "../utilities";
 import "./TicTacToeSetup.css";
 
 const TicTacToeSetup = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const [joinCode, setJoinCode] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("easy");
+  const [error, setError] = useState("");
 
-  const handleCreateRoom = () => {
-    const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    navigate("/tictactoe/waiting", {
-      state: {
-        gameCode: gameCode,
-      },
-    });
+  const categories = [
+    { value: "easy", label: "Easy" },
+    { value: "difficult", label: "Difficult" },
+    { value: "hard", label: "Hard" },
+    { value: "calculus", label: "Calculus" },
+    { value: "word", label: "Word Problems" },
+  ];
+
+  const handleCreateRoom = async () => {
+    try {
+      const response = await post("/api/gameroom/create", { category: selectedCategory });
+      console.log("Create room response:", response);
+
+      if (response && response.gameCode) {
+        navigate("/tictactoe/waiting", {
+          state: {
+            gameCode: response.gameCode,
+            category: selectedCategory,
+            isHost: true,
+          },
+        });
+      } else {
+        setError("Failed to create room - no game code received");
+      }
+    } catch (err) {
+      console.error("Error creating room:", err);
+      setError(err.response?.data?.error || "Could not create room");
+    }
   };
 
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (joinCode.trim()) {
-      navigate("/tictactoe/game", {
-        state: {
-          mode: "two-player",
+      try {
+        const response = await post("/api/gameroom/join", {
           gameCode: joinCode.trim().toUpperCase(),
-        },
-      });
+        });
+
+        if (response.success) {
+          setError("");
+          navigate("/tictactoe/waiting", {
+            state: {
+              gameCode: joinCode.trim().toUpperCase(),
+              category: selectedCategory,
+              isHost: false,
+            },
+          });
+        }
+      } catch (err) {
+        console.error("Error joining room:", err);
+        setError(err.response?.data?.error || "Could not join room");
+      }
     }
   };
 
@@ -32,6 +69,7 @@ const TicTacToeSetup = () => {
     navigate("/tictactoe/game", {
       state: {
         mode: "single",
+        category: selectedCategory,
       },
     });
   };
@@ -50,9 +88,13 @@ const TicTacToeSetup = () => {
               type="text"
               placeholder="Enter Room Code"
               value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
-              className="room-code-input"
+              onChange={(e) => {
+                setJoinCode(e.target.value);
+                setError(""); // Clear error when input changes
+              }}
+              className={`room-code-input ${error ? "error" : ""}`}
             />
+            {error && <div className="error-message">{error}</div>}
             <button className="setup-button" onClick={handleJoinRoom}>
               Join Room
             </button>
