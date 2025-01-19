@@ -48,22 +48,37 @@ const TicTacToeWaitingRoom = () => {
 
   // Socket event handlers
   useEffect(() => {
-    socket.on("player_joined", (data) => {
+    console.log("Setting up socket listeners for game code:", gameCode);
+
+    // Explicitly join the room
+    socket.emit("join room", gameCode);
+
+    // Debug socket connection
+    console.log("Socket connected:", socket.connected);
+    console.log("Socket id:", socket.id);
+
+    socket.on("connect", () => {
+      console.log("Socket connected in waiting room");
+      socket.emit("join room", gameCode);
+    });
+
+    socket.on("player joined", (data) => {
+      console.log("Player joined event:", data);
       setPlayers(data.players);
       setIsGameReady(data.players.length === 2);
-      // Trigger an immediate room check when a player joins
       checkRoom();
     });
 
-    socket.on("player_left", (data) => {
+    socket.on("player left", (data) => {
+      console.log("Player left event:", data);
       setPlayers(data.players);
       setIsGameReady(false);
-      // Trigger an immediate room check when a player leaves
       checkRoom();
     });
 
     socket.on("game_started", (data) => {
-      navigate("/tictactoe", {
+      console.log("Game started event received:", data);
+      navigate("/tictactoe/game", {
         state: {
           mode: "two-player",
           gameCode: gameCode,
@@ -72,19 +87,25 @@ const TicTacToeWaitingRoom = () => {
       });
     });
 
-    return () => {
-      // Leave the room
-      post("/api/gameroom/" + gameCode + "/leave")
-        .catch(console.error);
+    // Debug listener for all events
+    socket.onAny((eventName, ...args) => {
+      console.log(`Socket event received: ${eventName}`, args);
+    });
 
-      socket.off("player_joined");
-      socket.off("player_left");
+    return () => {
+      console.log("Cleaning up socket listeners for game code:", gameCode);
+      post("/api/gameroom/" + gameCode + "/leave").catch(console.error);
+
+      socket.off("connect");
+      socket.off("player joined");
+      socket.off("player left");
       socket.off("game_started");
     };
   }, [gameCode, navigate]);
 
   const handleStartGame = () => {
-    socket.emit("start_game", { gameCode, category });
+    console.log("Starting game with:", { gameCode, category });
+    socket.emit("game_started", { gameCode, category });
   };
 
   if (error) {
@@ -132,15 +153,14 @@ const TicTacToeWaitingRoom = () => {
         </div>
 
         <div className="status-message">
-          {!isGameReady 
+          {!isGameReady
             ? "Waiting for opponent to join..."
-            : isHost 
-              ? "Both players are ready! You can start the game."
-              : "Waiting for host to start the game..."
-          }
+            : isHost
+            ? "Both players are ready! You can start the game."
+            : "Waiting for host to start the game..."}
         </div>
 
-        {(isHost && isGameReady) && (
+        {isHost && isGameReady && (
           <button className="start-button" onClick={handleStartGame}>
             Start Game
           </button>

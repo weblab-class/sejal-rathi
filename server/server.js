@@ -68,8 +68,9 @@ app.use(auth.populateCurrentUser);
 app.use("/api", api);
 app.use("/auth", auth.router);
 
-// Initialize socket
-socketManager.init(server);
+// Initialize socket with session support
+const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+socketManager.init(server, wrap(sessionMiddleware));
 
 // Serve static files
 const reactPath = path.resolve(__dirname, "..", "client", "dist");
