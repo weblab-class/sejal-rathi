@@ -86,7 +86,7 @@ body.dark .game-status {
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
-  color: var(--light-text);
+  color: var(--dark-text);
 }
 
 body.dark .cell {

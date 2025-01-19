@@ -269,15 +269,7 @@ const TicTacToe = () => {
 
       {mode === "two-player" && gameCode && (
         <div className="waiting">
-          {!gameStarted ? (
-            <>
-              Waiting for opponent to join...
-              <div className="game-code">Game Code: {gameCode}</div>
-              <div className="game-code-instructions">Share this code with your opponent</div>
-            </>
-          ) : (
-            <div className="player-info">You are Player {playerSymbol}</div>
-          )}
+          {<div className="player-info">You are Player {playerSymbol}</div>}
         </div>
       )}
 

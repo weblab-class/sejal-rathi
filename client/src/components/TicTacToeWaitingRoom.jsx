@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "./context/ThemeContext";
 import { socket } from "../client-socket";
 import { get, post } from "../utilities";
+import GameCountdown from "./GameCountdown";
 import "./TicTacToeWaitingRoom.css";
 
 const REFRESH_INTERVAL = 3000; // Check every 3 seconds
@@ -16,6 +17,7 @@ const TicTacToeWaitingRoom = () => {
   const [isGameReady, setIsGameReady] = useState(false);
   const [error, setError] = useState("");
   const [players, setPlayers] = useState([]);
+  const [showCountdown, setShowCountdown] = useState(false);
 
   const checkRoom = async () => {
     try {
@@ -78,13 +80,7 @@ const TicTacToeWaitingRoom = () => {
 
     socket.on("game_started", (data) => {
       console.log("Game started event received:", data);
-      navigate("/tictactoe/game", {
-        state: {
-          mode: "two-player",
-          gameCode: gameCode,
-          category: data.category,
-        },
-      });
+      setShowCountdown(true);
     });
 
     // Debug listener for all events
@@ -121,6 +117,7 @@ const TicTacToeWaitingRoom = () => {
 
   return (
     <div className={`waiting-room-container ${isDarkMode ? "dark" : "light"}`}>
+      {showCountdown && <GameCountdown gameCode={gameCode} category={category} />}
       <h1>Waiting Room</h1>
       <div className="waiting-room-box">
         <div className="room-code-display">
