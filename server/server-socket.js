@@ -161,45 +161,47 @@ const init = (server, sessionMiddleware) => {
       }
     });
 
-    socket.on("game:move", async (data) => {
-      const { gameCode, cellIndex, answer, question } = data;
-      const game = gameStates.get(gameCode);
+    socket.on("game:move", (data) => {
+      const { gameCode, cellIndex, answer, question, correctAnswer } = data;
+      const room = gameRooms.get(gameCode);
 
-      if (!game) return;
+      if (!room) return;
 
-      const player = game.players.find((p) => p.socket === socket.id);
+      const player = room.inGamePlayers.find((p) => p.socket === socket.id);
       if (!player) return;
 
-      // Check if it's a valid move
-      if (game.board[cellIndex].solved) return;
+      // Check if the cell is already solved
+      if (room.board[cellIndex]?.solved) {
+        console.log(`Cell ${cellIndex} already solved in game ${gameCode}`);
+        return; // Prevent the move if the cell is already solved
+      }
 
-      try {
-        // Verify answer with the question
-        const isCorrect = String(answer).toLowerCase() === String(question.answer).toLowerCase();
+      // Verify the answer (implement your answer checking logic here)
+      if (!question) return null;
+      if (!correctAnswer) return null;
 
-        if (isCorrect) {
-          // Update the game state
-          game.board[cellIndex] = {
-            ...game.board[cellIndex],
-            solved: true,
-            player: player.symbol,
-          };
+      const isCorrect = String(correctAnswer).toLowerCase() === String(answer).toLowerCase();
 
-          // Notify all players about the move
-          io.to(gameCode).emit("cell_claimed", {
-            index: cellIndex,
-            symbol: player.symbol,
-          });
+      if (isCorrect) {
+        // Mark the cell as solved and assign the player's symbol
+        room.board[cellIndex] = {
+          ...room.board[cellIndex],
+          solved: true,
+          player: player.symbol, // Assign the player's symbol
+        };
 
-          // Check for winner
-          const winner = checkWinner(game.board);
-          if (winner) {
-            io.to(gameCode).emit("game:over", { winner });
-            gameStates.delete(gameCode);
-          }
+        // Notify all players about the move
+        io.to(gameCode).emit("cell_claimed", {
+          index: cellIndex,
+          symbol: player.symbol,
+        });
+
+        // Check for winner (implement your winning condition check)
+        const winner = checkWinner(room.board);
+        if (winner) {
+          io.to(gameCode).emit("game:over", { winner });
+          gameRooms.delete(gameCode);
         }
-      } catch (err) {
-        console.error("Error checking answer:", err);
       }
     });
 

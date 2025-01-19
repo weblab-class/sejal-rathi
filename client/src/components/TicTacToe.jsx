@@ -96,7 +96,11 @@ const TicTacToe = () => {
     socket.on("cell_claimed", ({ index, symbol }) => {
       setBoard((prevBoard) => {
         const newBoard = [...prevBoard];
-        newBoard[index] = symbol;
+        newBoard[index] = {
+          ...newBoard[index],
+          solved: true,
+          player: symbol,
+        };
         return newBoard;
       });
     });
@@ -213,6 +217,7 @@ const TicTacToe = () => {
           cellIndex: index,
           answer: userAnswer,
           question: cell.value,
+          correctAnswer: questions.find((q) => q.question === cell.value).answer,
         });
       }
     }
