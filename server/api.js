@@ -406,6 +406,65 @@ router.post("/gameroom/:code/leave", auth.ensureLoggedIn, (req, res) => {
     });
 });
 
+// Question API routes
+router.get("/question", (req, res) => {
+  const { category } = req.query;
+  
+  // For now, return a sample question. You can expand this to use a database later
+  const questions = {
+    easy: [
+      { _id: "1", question: "What is 2 + 2?", answer: "4" },
+      { _id: "2", question: "What is 5 - 3?", answer: "2" },
+      { _id: "3", question: "What is 3 × 3?", answer: "9" },
+    ],
+    medium: [
+      { _id: "4", question: "What is 12 × 8?", answer: "96" },
+      { _id: "5", question: "What is 15 + 27?", answer: "42" },
+      { _id: "6", question: "What is 45 ÷ 5?", answer: "9" },
+    ],
+    hard: [
+      { _id: "7", question: "What is 156 + 244?", answer: "400" },
+      { _id: "8", question: "What is 17 × 13?", answer: "221" },
+      { _id: "9", question: "What is 625 ÷ 25?", answer: "25" },
+    ],
+  };
+
+  const categoryQuestions = questions[category] || questions.easy;
+  const randomQuestion = categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
+  
+  res.send(randomQuestion);
+});
+
+router.post("/check-answer", (req, res) => {
+  const { questionId, answer } = req.body;
+  
+  // For now, we'll use the same questions object
+  const allQuestions = [
+    { _id: "1", question: "What is 2 + 2?", answer: "4" },
+    { _id: "2", question: "What is 5 - 3?", answer: "2" },
+    { _id: "3", question: "What is 3 × 3?", answer: "9" },
+    { _id: "4", question: "What is 12 × 8?", answer: "96" },
+    { _id: "5", question: "What is 15 + 27?", answer: "42" },
+    { _id: "6", question: "What is 45 ÷ 5?", answer: "9" },
+    { _id: "7", question: "What is 156 + 244?", answer: "400" },
+    { _id: "8", question: "What is 17 × 13?", answer: "221" },
+    { _id: "9", question: "What is 625 ÷ 25?", answer: "25" },
+  ];
+
+  const question = allQuestions.find(q => q._id === questionId);
+  
+  if (!question) {
+    return res.status(404).send({ msg: "Question not found" });
+  }
+
+  const isCorrect = String(question.answer).toLowerCase() === String(answer).toLowerCase();
+  
+  res.send({
+    correct: isCorrect,
+    message: isCorrect ? "Correct!" : "Incorrect, try again!",
+  });
+});
+
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
   console.log(`API route not found: ${req.method} ${req.url}`);

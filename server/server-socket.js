@@ -6,6 +6,7 @@ let io;
 const userToSocketMap = {}; // maps user ID to socket object
 const socketToUserMap = {}; // maps socket ID to user object
 const gameRooms = new Map(); // maps game code to room data
+const gameStates = new Map(); // maps game code to game state
 
 const getAllConnectedUsers = () => Object.values(socketToUserMap);
 const getSocketFromUserID = (userid) => userToSocketMap[userid];
@@ -34,6 +35,12 @@ const removeUser = (user, socket) => {
   if (user) delete userToSocketMap[user._id];
   delete socketToUserMap[socket.id];
   if (user) socket.leave(user._id);
+};
+
+const checkWinner = (board) => {
+  // implement logic to check for a winner
+  // for now, just return null
+  return null;
 };
 
 const init = (server, sessionMiddleware) => {
@@ -68,6 +75,7 @@ const init = (server, sessionMiddleware) => {
       console.log(`Socket error: ${socket.id} - ${err}`);
     });
 
+    // Game room management
     socket.on("join room", (gameCode) => {
       try {
         console.log(`Socket ${socket.id} joining room ${gameCode}`);
@@ -120,6 +128,58 @@ const init = (server, sessionMiddleware) => {
         console.log(`Broadcast complete to room ${gameCode}`);
       } catch (err) {
         console.error(`Error starting game:`, err);
+      }
+    });
+
+    socket.on("cell_claimed", ({ gameCode, index, symbol }) => {
+      try {
+        console.log(`Player claimed cell ${index} with symbol ${symbol} in game ${gameCode}`);
+        // Broadcast the move to all players in the room except the sender
+        socket.to(gameCode).emit("cell_claimed", { index, symbol });
+      } catch (err) {
+        console.error(`Error handling cell claim:`, err);
+      }
+    });
+
+    socket.on("game:move", async (data) => {
+      const { gameCode, cellIndex, answer, question } = data;
+      const game = gameStates.get(gameCode);
+      
+      if (!game) return;
+
+      const player = game.players.find((p) => p.socket === socket.id);
+      if (!player) return;
+
+      // Check if it's a valid move
+      if (game.board[cellIndex].solved) return;
+
+      try {
+        // Verify answer with the question
+        const isCorrect = String(answer).toLowerCase() === String(question.answer).toLowerCase();
+
+        if (isCorrect) {
+          // Update the game state
+          game.board[cellIndex] = {
+            ...game.board[cellIndex],
+            solved: true,
+            player: player.symbol
+          };
+
+          // Notify all players about the move
+          io.to(gameCode).emit("cell_claimed", {
+            index: cellIndex,
+            symbol: player.symbol
+          });
+
+          // Check for winner
+          const winner = checkWinner(game.board);
+          if (winner) {
+            io.to(gameCode).emit("game:over", { winner });
+            gameStates.delete(gameCode);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking answer:", err);
       }
     });
 

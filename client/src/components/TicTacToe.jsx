@@ -27,6 +27,9 @@ const TicTacToe = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [opponent, setOpponent] = useState(null);
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [showResult, setShowResult] = useState(null);
 
   const { isDarkMode } = useTheme();
 
@@ -86,8 +89,12 @@ const TicTacToe = () => {
       }
     });
 
-    socket.on("move:made", ({ cellIndex, player, board }) => {
-      setBoard(board);
+    socket.on("cell_claimed", ({ index, symbol }) => {
+      setBoard((prevBoard) => {
+        const newBoard = [...prevBoard];
+        newBoard[index] = symbol;
+        return newBoard;
+      });
     });
 
     socket.on("game:over", ({ winner }) => {
@@ -103,7 +110,7 @@ const TicTacToe = () => {
     return () => {
       socket.off("game:joined");
       socket.off("game:start");
-      socket.off("move:made");
+      socket.off("cell_claimed");
       socket.off("game:over");
       socket.off("player:left");
     };
@@ -166,7 +173,7 @@ const TicTacToe = () => {
     return String(currentQ.answer).toLowerCase() === String(userAnswer).toLowerCase();
   };
 
-  const handleCellClick = (index) => {
+  const handleCellClick = async (index) => {
     if (mode === "single") {
       if (gameOver || board[index].solved) return;
 
@@ -191,19 +198,17 @@ const TicTacToe = () => {
       }
     } else {
       // Multiplayer mode
-      if (gameOver || board[index].solved || !gameStarted || !playerSymbol) return;
+      if (!gameStarted || board[index].solved || !playerSymbol) return;
 
       const cell = board[index];
-      const isCorrect = checkAnswer(cell.value);
-
-      if (isCorrect !== null) {
+      const userAnswer = prompt(`Solve: ${cell.value}`);
+      
+      if (userAnswer !== null) {
         socket.emit("game:move", {
           gameCode,
           cellIndex: index,
-          answer: {
-            isCorrect,
-            question: cell.value,
-          },
+          answer: userAnswer,
+          question: cell.value,
         });
       }
     }
@@ -305,6 +310,32 @@ const TicTacToe = () => {
           </div>
         ))}
       </div>
+
+      {currentQuestion && (
+        <div className="question-modal">
+          <div className="question-content">
+            <h3>Answer this question:</h3>
+            <p>{currentQuestion.question}</p>
+            <input
+              type="text"
+              placeholder="Your answer..."
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleAnswer(e.target.value);
+                  e.target.value = "";
+                }
+              }}
+              autoFocus
+            />
+          </div>
+        </div>
+      )}
+
+      {showResult && (
+        <div className={`result-message ${showResult.correct ? "correct" : "incorrect"}`}>
+          {showResult.message}
+        </div>
+      )}
     </div>
   );
 };
