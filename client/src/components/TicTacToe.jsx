@@ -76,14 +76,18 @@ const TicTacToe = () => {
     // Socket event listeners
     socket.on("game:joined", ({ symbol }) => {
       setPlayerSymbol(symbol);
+      console.log(playerSymbol);
       if (symbol === "X") {
         setGameStarted(false); // Host waits for player 2
       }
     });
+  }, [mode, gameCode]);
 
+  useEffect(() => {
     socket.on("game:start", ({ players, board }) => {
       setGameStarted(true);
-      const opponentPlayer = players.find((p) => p.user._id !== socket.id);
+      const opponentPlayer = players.find((p) => p.socket !== socket.id);
+      console.log(opponentPlayer);
       if (opponentPlayer) {
         setOpponent(opponentPlayer);
       }
@@ -114,7 +118,7 @@ const TicTacToe = () => {
       socket.off("game:over");
       socket.off("player:left");
     };
-  }, [mode, gameCode]);
+  }, [playerSymbol]);
 
   useEffect(() => {
     // Timer for single player mode
@@ -202,7 +206,7 @@ const TicTacToe = () => {
 
       const cell = board[index];
       const userAnswer = prompt(`Solve: ${cell.value}`);
-      
+
       if (userAnswer !== null) {
         socket.emit("game:move", {
           gameCode,
@@ -247,7 +251,7 @@ const TicTacToe = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  if (loading) {
+  if (loading || !playerSymbol) {
     return (
       <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
         <div className="loading">Loading questions...</div>

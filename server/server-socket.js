@@ -65,10 +65,25 @@ const init = (server, sessionMiddleware) => {
       console.log(`Socket ${socket.id} received event '${eventName}':`, args);
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log(`Socket disconnected: ${socket.id} due to ${reason}`);
+    socket.on("disconnect", () => {
+      console.log(`Socket disconnected: ${socket.id}`);
       const user = getUserFromSocketID(socket.id);
       removeUser(user, socket);
+
+      // Clean up game rooms when a player disconnects
+      for (const [gameCode, room] of gameRooms.entries()) {
+        const playerIndex = room.inGamePlayers.findIndex((p) => p.socket === socket.id);
+        if (playerIndex !== -1) {
+          console.log(`Player ${socket.id} disconnected from game ${gameCode}`);
+          room.inGamePlayers.splice(playerIndex, 1);
+          if (room.inGamePlayers.length === 0) {
+            console.log(`Removing empty room ${gameCode}`);
+            gameRooms.delete(gameCode);
+          } else {
+            io.to(gameCode).emit("player:left");
+          }
+        }
+      }
     });
 
     socket.on("error", (err) => {
@@ -80,24 +95,29 @@ const init = (server, sessionMiddleware) => {
       try {
         console.log(`Socket ${socket.id} joining room ${gameCode}`);
         socket.join(gameCode);
-        
+
         // Debug room info after join
         const room = io.sockets.adapter.rooms.get(gameCode);
         console.log(`Room ${gameCode} size after join:`, room ? room.size : 0);
-        
+
         if (!gameRooms.has(gameCode)) {
-          gameRooms.set(gameCode, { players: [] });
+          gameRooms.set(gameCode, {
+            waitingPlayers: [],
+            inGamePlayers: [],
+            board: Array(9).fill(null),
+            started: false,
+          });
         }
         const gameRoom = gameRooms.get(gameCode);
         const user = getUserFromSocketID(socket.id);
-        
-        if (user && !gameRoom.players.includes(user._id)) {
-          gameRoom.players.push(user._id);
+
+        if (user && !gameRoom.inGamePlayers.includes(user._id)) {
+          gameRoom.inGamePlayers.push(user._id);
           console.log(`Added user ${user._id} to room ${gameCode}`);
         }
 
-        console.log(`Room ${gameCode} players:`, gameRoom.players);
-        io.to(gameCode).emit("player joined", { players: gameRoom.players });
+        console.log(`Room ${gameCode} players:`, gameRoom.waitingPlayers);
+        io.to(gameCode).emit("player joined", { players: gameRoom.waitingPlayers });
       } catch (err) {
         console.error(`Error joining room:`, err);
       }
@@ -106,7 +126,7 @@ const init = (server, sessionMiddleware) => {
     socket.on("game_started", ({ gameCode, category }) => {
       try {
         console.log(`Game start requested for room ${gameCode} with category ${category}`);
-        
+
         // Debug room info
         const room = io.sockets.adapter.rooms.get(gameCode);
         console.log(`Room ${gameCode} exists:`, !!room);
@@ -114,16 +134,16 @@ const init = (server, sessionMiddleware) => {
           console.log(`Room ${gameCode} size:`, room.size);
           console.log(`Room ${gameCode} sockets:`, Array.from(room));
         }
-        
+
         // Debug socket info
         console.log(`Current socket rooms:`, Array.from(socket.rooms));
-        
+
         // We don't need to check gameRooms, just broadcast to the room
         console.log(`Broadcasting game_started to room ${gameCode}`);
         io.to(gameCode).emit("game_started", {
-          category: category
+          category: category,
         });
-        
+
         // Verify the event was sent
         console.log(`Broadcast complete to room ${gameCode}`);
       } catch (err) {
@@ -144,7 +164,7 @@ const init = (server, sessionMiddleware) => {
     socket.on("game:move", async (data) => {
       const { gameCode, cellIndex, answer, question } = data;
       const game = gameStates.get(gameCode);
-      
+
       if (!game) return;
 
       const player = game.players.find((p) => p.socket === socket.id);
@@ -162,13 +182,13 @@ const init = (server, sessionMiddleware) => {
           game.board[cellIndex] = {
             ...game.board[cellIndex],
             solved: true,
-            player: player.symbol
+            player: player.symbol,
           };
 
           // Notify all players about the move
           io.to(gameCode).emit("cell_claimed", {
             index: cellIndex,
-            symbol: player.symbol
+            symbol: player.symbol,
           });
 
           // Check for winner
@@ -180,6 +200,74 @@ const init = (server, sessionMiddleware) => {
         }
       } catch (err) {
         console.error("Error checking answer:", err);
+      }
+    });
+
+    socket.on("game:join", ({ gameCode, user }) => {
+      try {
+        console.log(`Player ${socket.id} attempting to join game ${gameCode}`);
+
+        // Get or create game room
+        let room = gameRooms.get(gameCode);
+
+        // Create new room if it doesn't exist
+        if (!room) {
+          console.log(`Creating new game room ${gameCode}`);
+          room = {
+            waitingPlayers: [], // List for players in the waiting room
+            inGamePlayers: [], // List for players in the game
+            board: Array(9).fill(null),
+            started: false,
+          };
+          gameRooms.set(gameCode, room);
+        }
+
+        console.log(room);
+        // Check room capacity
+        if (room.waitingPlayers.length >= 2) {
+          console.log(`Room ${gameCode} is full. Current players:`, room.waitingPlayers);
+          socket.emit("game:error", { message: "Game room is full" });
+          return;
+        }
+
+        // Add player to waiting room
+        const player = { socket: socket.id, user };
+        room.waitingPlayers.push(player);
+        console.log(`Added player to waiting room ${gameCode}:`, {
+          socket: player.socket,
+          totalPlayers: room.waitingPlayers.length,
+        });
+
+        // Join socket room and notify player
+
+        socket.join(gameCode);
+        socket.emit("game:joined", {
+          message: "Waiting for another player...",
+          symbol: room.waitingPlayers.length === 1 ? "X" : "O",
+        });
+
+        // Start game if room is full
+        if (room.waitingPlayers.length === 2 && !room.started) {
+          console.log(
+            `Starting game ${gameCode} with players:`,
+            room.waitingPlayers.map((p) => p.socket)
+          );
+          room.started = true;
+          // Move players to in-game list only when the game starts
+          console.log(room.waitingPlayers);
+          room.inGamePlayers = room.waitingPlayers.map((p, index) => ({
+            socket: p.socket,
+            symbol: index === 0 ? "X" : "O",
+          }));
+          room.waitingPlayers = []; // Clear waiting room
+          io.to(gameCode).emit("game:start", {
+            players: room.inGamePlayers,
+            board: room.board,
+          });
+        }
+      } catch (error) {
+        console.error("Error in game:join:", error);
+        socket.emit("game:error", { message: "Failed to join game" });
       }
     });
 
