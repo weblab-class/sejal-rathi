@@ -22,7 +22,7 @@ const GameSelect = () => {
       description: "Identify the four categories among these 16 numbers!",
       colorDark: "#F9CFF2",
       colorLight: "#DC6AC9",
-      path: "/mathnections",
+      path: "/connections",
     },
     {
       id: "nerdle",

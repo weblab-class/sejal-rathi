@@ -465,6 +465,203 @@ router.post("/check-answer", (req, res) => {
   });
 });
 
+// Get 4 random categories (one from each level)
+router.get("/categories/random", (req, res) => {
+  const categories = [
+    // Level 1 (Simple & Visually Obvious Patterns)
+    {
+      _id: "1_1",
+      name: "Multiples of 5",
+      level: 1,
+      sampleNumbers: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+    },
+    {
+      _id: "1_2",
+      name: "Prime Numbers",
+      level: 1,
+      sampleNumbers: [2, 3, 5, 7, 11, 13, 17, 19, 23, 29],
+    },
+    {
+      _id: "1_3",
+      name: "Powers of 2",
+      level: 1,
+      sampleNumbers: [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
+    },
+    {
+      _id: "1_4",
+      name: "Same Digit Repeated",
+      level: 1,
+      sampleNumbers: [11, 22, 33, 44, 55, 66, 77, 88, 99, 111],
+    },
+    {
+      _id: "1_5",
+      name: "Even Numbers",
+      level: 1,
+      sampleNumbers: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    },
+    {
+      _id: "1_6",
+      name: "Odd Numbers",
+      level: 1,
+      sampleNumbers: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19],
+    },
+    {
+      _id: "1_7",
+      name: "Multiples of 10",
+      level: 1,
+      sampleNumbers: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+    },
+    {
+      _id: "1_8",
+      name: "Single Digit Numbers",
+      level: 1,
+      sampleNumbers: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    },
+    {
+      _id: "1_9",
+      name: "Ascending Digits",
+      level: 1,
+      sampleNumbers: [12, 23, 34, 45, 56, 67, 78, 89, 123, 234],
+    },
+    {
+      _id: "1_10",
+      name: "Descending Digits",
+      level: 1,
+      sampleNumbers: [21, 32, 43, 54, 65, 76, 87, 98],
+    },
+
+    // Level 2 (Recognizable Mathematical Patterns)
+    {
+      _id: "2_1",
+      name: "Palindrome Numbers",
+      level: 2,
+      sampleNumbers: [11, 22, 33, 44, 55, 66, 77, 88, 99, 121],
+    },
+    {
+      _id: "2_2",
+      name: "Perfect Squares",
+      level: 2,
+      sampleNumbers: [1, 4, 9, 16, 25, 36, 49, 64, 81, 100],
+    },
+    {
+      _id: "2_3",
+      name: "Perfect Cubes",
+      level: 2,
+      sampleNumbers: [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000],
+    },
+    {
+      _id: "2_4",
+      name: "Powers of 3",
+      level: 2,
+      sampleNumbers: [3, 9, 27, 81, 243, 729, 2187, 6561, 19683],
+    },
+    {
+      _id: "2_5",
+      name: "Powers of 5",
+      level: 2,
+      sampleNumbers: [5, 25, 125, 625, 3125, 15625, 78125, 390625],
+    },
+    {
+      _id: "2_6",
+      name: "Multiples of 7",
+      level: 2,
+      sampleNumbers: [7, 14, 21, 28, 35, 42, 49, 56, 63, 70],
+    },
+    {
+      _id: "2_7",
+      name: "Arithmetic Sequence (+3)",
+      level: 2,
+      sampleNumbers: [4, 7, 10, 13, 16, 19, 22, 25, 28, 31],
+    },
+    {
+      _id: "2_8",
+      name: "Geometric Sequence (×2)",
+      level: 2,
+      sampleNumbers: [3, 6, 12, 24, 48, 96, 192, 384, 768],
+    },
+    {
+      _id: "2_9",
+      name: "Triangular Numbers",
+      level: 2,
+      sampleNumbers: [1, 3, 6, 10, 15, 21, 28, 36, 45, 55],
+    },
+    {
+      _id: "2_10",
+      name: "Fibonacci Numbers",
+      level: 2,
+      sampleNumbers: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55],
+    },
+
+    // Level 3 (Intermediate Mathematical Structures)
+    {
+      _id: "3_1",
+      name: "Factorials",
+      level: 3,
+      sampleNumbers: [1, 2, 6, 24, 120, 720, 5040, 40320, 362880],
+    },
+    {
+      _id: "3_2",
+      name: "Perfect Numbers",
+      level: 3,
+      sampleNumbers: [6, 28, 496, 8128, 33550336],
+    },
+    {
+      _id: "3_3",
+      name: "Catalan Numbers",
+      level: 3,
+      sampleNumbers: [1, 1, 2, 5, 14, 42, 132],
+    },
+    {
+      _id: "3_4",
+      name: "Highly Composite Numbers",
+      level: 3,
+      sampleNumbers: [12, 24, 36, 48, 60, 120, 180, 240, 360],
+    },
+
+    // Level 4 (Advanced & Less Obvious Patterns)
+    {
+      _id: "4_1",
+      name: "Lucas Sequence",
+      level: 4,
+      sampleNumbers: [1, 3, 4, 7, 11, 18, 29, 47, 76, 123],
+    },
+    {
+      _id: "4_2",
+      name: "Double Factorial (Even)",
+      level: 4,
+      sampleNumbers: [2, 8, 48, 384, 3840, 46080],
+    },
+    {
+      _id: "4_3",
+      name: "Pentagonal Numbers",
+      level: 4,
+      sampleNumbers: [1, 5, 12, 22, 35, 51, 70, 92, 117, 145],
+    },
+    {
+      _id: "4_4",
+      name: "Bell Numbers",
+      level: 4,
+      sampleNumbers: [1, 1, 2, 5, 15, 52, 203, 877, 4140, 21147],
+    },
+    {
+      _id: "4_5",
+      name: "Happy Numbers",
+      level: 4,
+      sampleNumbers: [1, 7, 10, 13, 19, 23, 28, 31, 32, 44],
+    },
+  ];
+
+  // Get one random category from each level
+  const selectedCategories = [];
+  for (let level = 1; level <= 4; level++) {
+    const levelCategories = categories.filter((cat) => cat.level === level);
+    const randomIndex = Math.floor(Math.random() * levelCategories.length);
+    selectedCategories.push(levelCategories[randomIndex]);
+  }
+
+  res.send(selectedCategories);
+});
+
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
   console.log(`API route not found: ${req.method} ${req.url}`);

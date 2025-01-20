@@ -12,6 +12,7 @@ import TicTacToe from "./TicTacToe";
 import Settings from "./Settings";
 import Profile from "./Profile";
 import NotFound from "./pages/NotFound.jsx";
+import ConnectionsGame from "./ConnectionsGame";
 
 import { ThemeProvider } from "./context/ThemeContext";
 import { SoundProvider } from "./context/SoundContext";
@@ -80,6 +81,7 @@ const App = () => {
             <Route path="/tictactoe/waiting" element={<TicTacToeWaitingRoom />} />
             <Route path="/tictactoe/game" element={<TicTacToe />} />
             <Route path="/settings" element={<Settings userId={userId} />} />
+            <Route path="/connections" element={<ConnectionsGame />} />
             {!userId?.startsWith("guest_") && <Route path="/profile" element={<Profile />} />}
             <Route path="*" element={<NotFound />} />
           </Routes>
