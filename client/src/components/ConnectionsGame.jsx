@@ -195,19 +195,45 @@ const ConnectionsGame = () => {
   // Render the grid with category groups after game over
   const renderNumberGrid = () => {
     if (!gameOver) {
-      // Regular grid during gameplay
-      return displayedNumbers.map((num, index) => (
-        <button
-          key={`${num.value}-${num.categoryId}`}
-          className={`number-cell ${num.selected ? "selected" : ""} ${
-            num.solved ? `solved-${num.categoryLevel}` : ""
-          }`}
-          onClick={() => handleNumberClick(index)}
-          disabled={num.solved || gameOver}
-        >
-          {num.value}
-        </button>
-      ));
+      // First render solved categories at the top
+      const solvedElements = solvedCategories.map((categoryId) => {
+        const category = categories.find((cat) => cat._id === categoryId);
+        const categoryNumbers = displayedNumbers
+          .filter((num) => num.categoryId === categoryId)
+          .sort((a, b) => a.value - b.value);
+
+        return (
+          <div key={categoryId} className={`category-row level-${category.level}`}>
+            <div className="category-title">{category.name.toUpperCase()}</div>
+            <div className="category-subtitle">
+              {categoryNumbers.map((num) => num.value).join(", ")}
+            </div>
+          </div>
+        );
+      });
+
+      // Then render unsolved numbers in the grid
+      const unsolvedNumbers = displayedNumbers
+        .filter((num) => !solvedCategories.includes(num.categoryId))
+        .map((num, index) => (
+          <button
+            key={`${num.value}-${num.categoryId}`}
+            className={`number-cell ${num.selected ? "selected" : ""}`}
+            onClick={() => handleNumberClick(displayedNumbers.indexOf(num))}
+            disabled={gameOver}
+          >
+            {num.value}
+          </button>
+        ));
+
+      return (
+        <div className="gameplay-container">
+          {solvedElements}
+          <div className="gameplay-grid">
+            {unsolvedNumbers}
+          </div>
+        </div>
+      );
     } else {
       // Group numbers by category after game over
       const numbersByCategory = {};

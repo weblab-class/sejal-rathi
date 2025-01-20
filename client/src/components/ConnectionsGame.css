@@ -1,12 +1,12 @@
 .connections-game {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px;
   text-align: center;
 }
 
 .game-info {
-  margin: 20px 0;
+  margin: 10px 0;
   text-align: center;
 }
 
@@ -24,43 +24,39 @@
 
 .number-grid-unsolved {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 140px);
   gap: 10px;
-  margin: 20px auto;
-  max-width: 600px;
+  margin: 10px auto;
+  justify-content: center;
 }
 
 .number-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin: 20px auto;
-  max-width: 600px;
+  grid-template-columns: repeat(4, 140px);
+  margin: 10px auto;
+  justify-content: center;
 }
 
 .number-grid.game-over {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 800px;
   margin: 0 auto;
+  padding-top: 10px;
 }
 
 .category-row {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px;
+  padding: 10px;
   border-radius: 8px;
   position: relative;
   cursor: pointer;
   transition: transform 0.2s ease;
   color: #141444;
-  height: 103px;
-}
-
-.category-row:not(:last-child) {
-  margin-bottom: 10px;
+  width: 570px;
+  height: 120px;
+  margin: 0 auto;
+  margin-top: 10px;
 }
 
 .category-title {
@@ -73,13 +69,14 @@
 .category-subtitle {
   text-align: center;
   font-size: 24px;
-  margin-top: 5px;
+  margin-top: 20px;
 }
 
 .numbers-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 140px);
   gap: 10px;
+  column-gap: 0px;
 }
 
 .category-row.level-1 {
@@ -108,7 +105,8 @@
 }
 
 .number-cell {
-  aspect-ratio: 1;
+  width: 140px;
+  height: 140px;
   border: 2px solid #d2d9eb;
   background-color: #fff;
   border-radius: 8px;
@@ -117,10 +115,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
   font-family: "Google Sans", Roboto, Arial, sans-serif;
-  transition: all 0.5s ease;
-  transform-origin: center;
+  transition: all 0.2s ease;
 }
 
 .number-cell:hover:not(.solved):not(.game-over .number-cell) {
@@ -154,13 +150,13 @@
 
 .difficulty-select {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .difficulty-buttons {
   display: flex;
   gap: 10px;
-  margin: 15px 0;
+  margin: 10px 0;
   justify-content: center;
 }
 
@@ -199,7 +195,7 @@
   font-size: 1.2em;
   border-radius: 5px;
   cursor: pointer;
-  margin: 20px 0;
+  margin: 10px 0;
   transition: background-color 0.3s ease;
 }
 
@@ -221,7 +217,7 @@
 }
 
 .play-again-button {
-  margin-top: 20px;
+  margin-top: 10px;
   padding: 10px 20px;
   font-size: 16px;
   background-color: #4caf50;
@@ -241,7 +237,7 @@
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .solved-category {
@@ -278,10 +274,10 @@
 }
 
 .category-reveal {
-  margin: 20px 0;
+  margin: 10px 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .level-categories {
@@ -330,6 +326,22 @@
 
 .category-numbers {
   flex: 1;
+}
+
+.gameplay-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 10px;
+}
+
+.gameplay-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 140px);
+  gap: 10px;
+  margin: 10px auto;
+  justify-content: center;
 }
 
 :root {
