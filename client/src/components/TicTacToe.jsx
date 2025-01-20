@@ -162,11 +162,11 @@ const TicTacToe = () => {
       } else if (mode === "two-player" && winner) {
         if (winner === playerSymbol) {
           updateStats("win");
+        } else if (winner === "tie" && gameOver) {
+          updateStats("tie");
         } else {
           updateStats("loss");
         }
-      } else if (!winner && gameOver) {
-        updateStats("tie");
       }
     }
   }, [gameOver, winner, mode, timeLeft, loading, playerSymbol]);
@@ -290,12 +290,12 @@ const TicTacToe = () => {
       {mode === "single" && <div className="timer">Time Left: {formatTime(timeLeft)}</div>}
 
       <div className="game-status">
-        {gameOver ? (
+        {gameOver && (
           <>
             {timeLeft === 0
               ? "Time's up! Game Over"
               : winner
-              ? `Player ${winner} wins!  `
+              ? `Player ${winner} wins!`
               : "Game Over"}
             <div>
               <button className="play-again" onClick={() => navigate("/tictactoe/setup")}>
@@ -303,8 +303,6 @@ const TicTacToe = () => {
               </button>
             </div>
           </>
-        ) : (
-          gameStarted && `You are ${playerSymbol}`
         )}
       </div>
 

@@ -67,6 +67,10 @@ const checkWinner = (currentBoard) => {
   return null;
 };
 
+const checkTie = (currentBoard) => {
+  return currentBoard.every((cell) => cell && cell.solved);
+};
+
 const init = (server, sessionMiddleware) => {
   io = socketio(server, {
     cors: {
@@ -226,6 +230,12 @@ const init = (server, sessionMiddleware) => {
         const winner = checkWinner(room.board);
         if (winner) {
           io.to(gameCode).emit("game:over", { winner });
+          gameRooms.delete(gameCode);
+        }
+
+        const tie = checkTie(room.board);
+        if (tie) {
+          io.to(gameCode).emit("game:over", { winner: "tie" });
           gameRooms.delete(gameCode);
         }
       }
