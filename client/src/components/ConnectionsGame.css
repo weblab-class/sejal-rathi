@@ -7,17 +7,27 @@
 
 .game-info {
   margin: 20px 0;
+  text-align: center;
 }
 
 .message {
-  font-size: 1.2em;
+  font-size: 18px;
   margin: 10px 0;
+  font-weight: bold;
   color: #333;
 }
 
 .attempts {
-  font-size: 1.1em;
+  font-size: 16px;
   color: #666;
+}
+
+.number-grid-unsolved {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 20px auto;
+  max-width: 600px;
 }
 
 .number-grid {
@@ -28,6 +38,75 @@
   max-width: 600px;
 }
 
+.number-grid.game-over {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.category-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 8px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  color: #141444;
+  height: 103px;
+}
+
+.category-row:not(:last-child) {
+  margin-bottom: 10px;
+}
+
+.category-title {
+  text-align: center;
+  font-size: 30px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.category-subtitle {
+  text-align: center;
+  font-size: 24px;
+  margin-top: 5px;
+}
+
+.numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.category-row.level-1 {
+  background-color: var(--level-1-color);
+}
+
+.category-row.level-2 {
+  background-color: var(--level-2-color);
+}
+
+.category-row.level-3 {
+  background-color: var(--level-3-color);
+}
+
+.category-row.level-4 {
+  background-color: var(--level-4-color);
+}
+
+.game-over .number-cell {
+  cursor: default;
+  background-color: transparent;
+  border: none;
+  font-size: 20px;
+  font-weight: normal;
+  padding: 15px;
+}
+
 .number-cell {
   aspect-ratio: 1;
   border: 2px solid #d2d9eb;
@@ -35,16 +114,16 @@
   border-radius: 8px;
   font-size: 1.5em;
   cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   font-family: "Google Sans", Roboto, Arial, sans-serif;
+  transition: all 0.5s ease;
+  transform-origin: center;
 }
 
-.number-cell:hover:not(.solved) {
-  background-color: #f0f0f0;
+.number-cell:hover:not(.solved):not(.game-over .number-cell) {
   transform: scale(1.05);
 }
 
@@ -53,34 +132,62 @@
   border-color: #2196f3;
 }
 
-.number-cell.solved {
-  background-color: #c8e6c9;
-  border-color: #4caf50;
-  cursor: not-allowed;
-}
-
 .number-cell.solved-1 {
-  background-color: #fff4d4;
-  border-color: #ffd966;
-  cursor: not-allowed;
+  background-color: var(--level-1-color);
+  border-color: var(--level-1-border);
 }
 
 .number-cell.solved-2 {
-  background-color: #d4edda;
-  border-color: #86efac;
-  cursor: not-allowed;
+  background-color: var(--level-2-color);
+  border-color: var(--level-2-border);
 }
 
 .number-cell.solved-3 {
-  background-color: #cfe2ff;
-  border-color: #93c5fd;
-  cursor: not-allowed;
+  background-color: var(--level-3-color);
+  border-color: var(--level-3-border);
 }
 
 .number-cell.solved-4 {
-  background-color: #ffe2f5;
-  border-color: #f9a8d4;
-  cursor: not-allowed;
+  background-color: var(--level-4-color);
+  border-color: var(--level-4-border);
+}
+
+.difficulty-select {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.difficulty-buttons {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+  justify-content: center;
+}
+
+.difficulty-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: 2px solid #2196f3;
+  border-radius: 5px;
+  background-color: white;
+  color: #2196f3;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.difficulty-button:hover {
+  background-color: #e3f2fd;
+}
+
+.difficulty-button.selected {
+  background-color: #2196f3;
+  color: white;
+}
+
+.difficulty-description {
+  margin-top: 10px;
+  color: #666;
+  font-size: 14px;
 }
 
 .start-button,
@@ -101,12 +208,32 @@
   background-color: #1976d2;
 }
 
+.start-button {
+  margin-top: 10px;
+}
+
 .submit-button {
   background-color: #4caf50;
 }
 
 .submit-button:hover {
   background-color: #388e3c;
+}
+
+.play-again-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.play-again-button:hover {
+  background-color: #45a049;
 }
 
 .solved-categories {
@@ -123,28 +250,91 @@
   padding: 10px 20px;
   border-radius: 20px;
   font-size: 1.1em;
+  margin-bottom: 10px;
 }
 
 .solved-category.solved-1 {
-  background-color: #fff4d4;
+  background-color: var(--level-1-color);
   color: #854d0e;
-  border: 1px solid #ffd966;
+  border: 1px solid var(--level-1-border);
 }
 
 .solved-category.solved-2 {
-  background-color: #d4edda;
+  background-color: var(--level-2-color);
   color: #166534;
-  border: 1px solid #86efac;
+  border: 1px solid var(--level-2-border);
 }
 
 .solved-category.solved-3 {
-  background-color: #cfe2ff;
+  background-color: var(--level-3-color);
   color: #1e40af;
-  border: 1px solid #93c5fd;
+  border: 1px solid var(--level-3-border);
 }
 
 .solved-category.solved-4 {
-  background-color: #ffe2f5;
+  background-color: var(--level-4-color);
   color: #9d174d;
-  border: 1px solid #f9a8d4;
+  border: 1px solid var(--level-4-border);
+}
+
+.category-reveal {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.level-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.level-categories h3 {
+  margin: 0;
+  color: #666;
+}
+
+.revealed-category {
+  padding: 10px;
+  border-radius: 5px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.revealed-category.revealed-1 {
+  background-color: var(--level-1-color);
+  border-color: var(--level-1-border);
+}
+
+.revealed-category.revealed-2 {
+  background-color: var(--level-2-color);
+  border-color: var(--level-2-border);
+}
+
+.revealed-category.revealed-3 {
+  background-color: var(--level-3-color);
+  border-color: var(--level-3-border);
+}
+
+.revealed-category.revealed-4 {
+  background-color: var(--level-4-color);
+  border-color: var(--level-4-border);
+}
+
+.category-name {
+  font-weight: bold;
+  min-width: 150px;
+}
+
+.category-numbers {
+  flex: 1;
+}
+
+:root {
+  --level-1-color: #ffeeb3; /* yellow */
+  --level-2-color: #bde5b7; /* green */
+  --level-3-color: #b3d5ff; /* blue */
+  --level-4-color: #e7c6df; /* purple */
 }

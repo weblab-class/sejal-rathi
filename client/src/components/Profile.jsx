@@ -3,12 +3,29 @@ import { useTheme } from "./context/ThemeContext";
 import { get } from "../utilities";
 import "./Profile.css";
 
+const calculateWinRate = (gamesWon, gamesPlayed) => {
+  if (gamesPlayed === 0) {
+    return 0;
+  }
+  return Math.round((gamesWon / gamesPlayed) * 100);
+};
+
 const Profile = () => {
   const { isDarkMode } = useTheme();
   const [userStats, setUserStats] = useState({
-    gamesPlayed: 0,
-    winRate: 0,
-    winStreak: 0,
+    tictactoe: {
+      gamesPlayed: 0,
+      gamesWon: 0,
+      winStreak: 0,
+      currentWinStreak: 0,
+    },
+    connections: {
+      gamesPlayed: 0,
+      gamesWon: 0,
+      streak: 0,
+      longestStreak: 0,
+      averageAttempts: 0,
+    },
   });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -32,16 +49,21 @@ const Profile = () => {
         const data = await get("/api/user/stats");
         console.log("Received stats data:", data);
 
-        if (data.stats && data.stats.tictactoe) {
-          const stats = data.stats.tictactoe;
-          console.log("TicTacToe stats:", stats);
-          const totalGames = stats.gamesPlayed;
-          const winRate = totalGames > 0 ? Math.round((stats.gamesWon / totalGames) * 100) : 0;
-
+        if (data.stats) {
           setUserStats({
-            gamesPlayed: totalGames,
-            winRate: winRate,
-            winStreak: stats.winStreak,
+            tictactoe: {
+              gamesPlayed: data.stats.tictactoe.gamesPlayed || 0,
+              gamesWon: data.stats.tictactoe.gamesWon || 0,
+              winStreak: data.stats.tictactoe.winStreak || 0,
+              currentWinStreak: data.stats.tictactoe.currentWinStreak || 0,
+            },
+            connections: {
+              gamesPlayed: data.stats.connections.gamesPlayed || 0,
+              gamesWon: data.stats.connections.gamesWon || 0,
+              streak: data.stats.connections.streak || 0,
+              longestStreak: data.stats.connections.longestStreak || 0,
+              averageAttempts: data.stats.connections.averageAttempts || 0,
+            },
           });
         }
       } catch (error) {
@@ -61,26 +83,25 @@ const Profile = () => {
           <div className="profile-box">
             <div className="stat-item">
               <div className="stat-info">
-                <h3>Games Played</h3>
-                <p className="stat-value">{userStats.gamesPlayed}</p>
-              </div>
-            </div>
+                <h2>Your Statistics</h2>
+                <div className="stats-section">
+                  <h3>Tic Tac Toe</h3>
+                  <p>Games Played: {userStats.tictactoe.gamesPlayed}</p>
+                  <p>Games Won: {userStats.tictactoe.gamesWon}</p>
+                  <p>Win Rate: {calculateWinRate(userStats.tictactoe.gamesWon, userStats.tictactoe.gamesPlayed)}%</p>
+                  <p>Current Win Streak: {userStats.tictactoe.currentWinStreak}</p>
+                  <p>Longest Win Streak: {userStats.tictactoe.winStreak}</p>
+                </div>
 
-            <div className="divider"></div>
-
-            <div className="stat-item">
-              <div className="stat-info">
-                <h3>Win Rate</h3>
-                <p className="stat-value">{userStats.winRate}%</p>
-              </div>
-            </div>
-
-            <div className="divider"></div>
-
-            <div className="stat-item">
-              <div className="stat-info">
-                <h3>Best Win Streak</h3>
-                <p className="stat-value">{userStats.winStreak}</p>
+                <div className="stats-section">
+                  <h3>Connections</h3>
+                  <p>Games Played: {userStats.connections.gamesPlayed}</p>
+                  <p>Games Won: {userStats.connections.gamesWon}</p>
+                  <p>Win Rate: {calculateWinRate(userStats.connections.gamesWon, userStats.connections.gamesPlayed)}%</p>
+                  <p>Current Streak: {userStats.connections.streak}</p>
+                  <p>Longest Streak: {userStats.connections.longestStreak}</p>
+                  <p>Average Attempts: {userStats.connections.averageAttempts.toFixed(1)}</p>
+                </div>
               </div>
             </div>
           </div>

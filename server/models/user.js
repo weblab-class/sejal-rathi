@@ -16,6 +16,13 @@ const UserSchema = new mongoose.Schema({
       winStreak: { type: Number, default: 0 },
       currentWinStreak: { type: Number, default: 0 },
     },
+    connections: {
+      gamesPlayed: { type: Number, default: 0 },
+      gamesWon: { type: Number, default: 0 },
+      streak: { type: Number, default: 0 },
+      longestStreak: { type: Number, default: 0 },
+      averageAttempts: { type: Number, default: 0 },
+    },
   },
 });
 
