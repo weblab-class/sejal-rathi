@@ -173,57 +173,31 @@ router.get("/categories/random", async (req, res) => {
         levelCounts = { 1: 1, 2: 1, 3: 1, 4: 1 }; // 1 from each level
         break;
       default:
-        levelCounts = { 1: 1, 2: 2, 3: 1 };
+        throw new Error("Invalid difficulty level");
     }
 
-    const selectedCategories = [];
+    const selectedCategories = {};
     const usedNumbers = new Set();
 
     // Get categories for each level
-    for (const [level, count] of Object.entries(levelCounts)) {
+    for (const level in levelCounts) {
       // Get all categories for this level
       const levelCategories = await Category.aggregate([
         { $match: { level: parseInt(level) } },
-        { $sample: { size: count * 2 } }, // Get extra categories in case some don't have enough unique numbers
+        { $sample: { size: levelCounts[level] * 5 } }, // Get many extra categories in case some don't have enough unique numbers
       ]);
 
-      let categoriesAdded = 0;
-      for (const category of levelCategories) {
-        if (categoriesAdded >= count) break;
-
-        // Filter out numbers that are already used
-        /*const availableNumbers = category.sampleNumbers.filter(num => !usedNumbers.has(num));
-        
-        if (availableNumbers.length >= 4) {
-          // Take exactly 4 random numbers from available numbers
-          const selectedNumbers = availableNumbers
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 4);
-          
-          // Add these numbers to used numbers set
-          selectedNumbers.forEach(num => usedNumbers.add(num));
-          
-          // Add category with its selected numbers
-          selectedCategories.push({
-            ...category,
-            sampleNumbers: selectedNumbers
-          });
-          
-          categoriesAdded++;
-        }*/
-        selectedCategories.push(category);
-        categoriesAdded++;
-      }
-
-      if (categoriesAdded < count) {
-        throw new Error(`Not enough categories with unique numbers for level ${level}`);
-      }
+      // Store all categories for this level
+      selectedCategories[level] = levelCategories;
     }
 
-    res.send(selectedCategories);
+    res.send({
+      categories: selectedCategories,
+      levelCounts: levelCounts // Send the required count for each level
+    });
   } catch (error) {
     console.error("Error getting random categories:", error);
-    res.status(500).send(error.message);
+    res.status(500).send({ error: "Failed to get random categories" });
   }
 });
 

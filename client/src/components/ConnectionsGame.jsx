@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./ConnectionsGame.css";
 
 const ConnectionsGame = () => {
@@ -14,6 +14,7 @@ const ConnectionsGame = () => {
   const [gameWon, setGameWon] = useState(false);
   const [usedAttempts, setUsedAttempts] = useState(0);
   const [difficulty, setDifficulty] = useState("medium");
+  const [error, setError] = useState(null);
 
   const categoryColors = {
     1: "yellow", // Level 1
@@ -47,43 +48,55 @@ const ConnectionsGame = () => {
   // Function to start a new game
   const startGame = async () => {
     try {
-      // Fetch random categories based on difficulty from the server
       const response = await fetch(`/api/categories/random?difficulty=${difficulty}`);
-      const fetchedCategories = await response.json();
+      const { categories: categoriesByLevel, levelCounts } = await response.json();
 
-      // Verify we have the correct number of categories
-      const expectedCounts = {
-        easy: 4, // 2 level 1 + 2 level 2
-        medium: 4, // 1 level 1 + 2 level 2 + 1 level 3
-        hard: 4, // 1 each from levels 1-4
-      };
+      // Keep track of all used numbers across categories
+      const usedNumbers = new Set();
+      const selectedCategories = [];
 
-      if (fetchedCategories.length !== expectedCounts[difficulty]) {
-        throw new Error("Incorrect number of categories received");
+      // Try to find valid categories for each level
+      for (const [level, count] of Object.entries(levelCounts)) {
+        const levelCategories = categoriesByLevel[level];
+        let categoriesFoundForLevel = 0;
+
+        // Try each category in this level until we find enough valid ones
+        for (const category of levelCategories) {
+          if (categoriesFoundForLevel >= count) break;
+
+          const categoryNumbers = generateRandomWords(category, usedNumbers);
+          if (categoryNumbers) {
+            selectedCategories.push({
+              ...category,
+              selectedNumbers: categoryNumbers.map((num) => ({
+                value: num,
+                categoryId: category._id,
+                categoryName: category.name,
+                color: category.color,
+                selected: false,
+              })),
+            });
+            categoriesFoundForLevel++;
+          }
+        }
+
+        if (categoriesFoundForLevel < count) {
+          throw new Error(`Could not find enough valid categories for level ${level}`);
+        }
       }
 
-      // Generate numbers for each category
-      const numbers = fetchedCategories.flatMap((category) => {
-        const numbers = generateRandomWords(category);
-        return numbers.map((num) => ({
-          value: num,
-          categoryId: category._id,
-          categoryName: category.name,
-          categoryLevel: category.level,
-          selected: false,
-        }));
-      });
+      // Flatten all numbers into a single array
+      const allNumbers = selectedCategories.flatMap((cat) => cat.selectedNumbers);
 
       // Verify we have exactly 16 numbers
-      if (numbers.length !== 16) {
-        throw new Error("Invalid number of squares generated");
+      if (allNumbers.length !== 16) {
+        throw new Error("Incorrect number of numbers generated");
       }
 
-      // Shuffle all numbers
-      const shuffledNumbers = [...numbers].sort(() => Math.random() - 0.5);
-
-      setCategories(fetchedCategories);
+      // Shuffle the numbers
+      const shuffledNumbers = shuffleArray(allNumbers);
       setDisplayedNumbers(shuffledNumbers);
+      setCategories(selectedCategories);
       setGameStarted(true);
       setAttempts(4);
       setSolvedCategories([]);
@@ -91,8 +104,17 @@ const ConnectionsGame = () => {
       setMessage("Select four numbers that you think belong together!");
     } catch (error) {
       console.error("Error starting game:", error);
-      setMessage("Error starting game. Please try again.");
+      setError("Failed to load game data");
     }
+  };
+
+  // Function to play again
+  const playAgain = () => {
+    setGameOver(false);
+    setGameWon(false);
+    setUsedAttempts(0);
+    setError(null);
+    setGameStarted(false); // Return to difficulty selection
   };
 
   // Function to display categories at game end
@@ -174,6 +196,40 @@ const ConnectionsGame = () => {
     }
   };
 
+  // Function to render solved categories
+  const renderSolvedCategories = () => {
+    const solvedCats = categories.filter(cat => 
+      displayedNumbers.some(num => num.categoryId === cat._id && num.solved)
+    );
+
+    return solvedCats.map(category => (
+      <div key={category._id} className={`category-row level-${category.level}`}>
+        <div className="category-title">{category.name}</div>
+        <div className="category-subtitle">{category.sampleNumbers.join(", ")}</div>
+      </div>
+    ));
+  };
+
+  // Function to render remaining numbers
+  const renderRemainingNumbers = () => {
+    return (
+      <div className="numbers-grid">
+        {displayedNumbers.map((number, index) => (
+          !number.solved && (
+            <button
+              key={`${number.value}-${index}`}
+              className={`number-cell ${number.selected ? "selected" : ""}`}
+              onClick={() => handleNumberClick(index)}
+              disabled={gameOver}
+            >
+              {number.value}
+            </button>
+          )
+        ))}
+      </div>
+    );
+  };
+
   // Render a solved category block
   const renderSolvedCategory = (categoryId) => {
     const category = categories.find((cat) => cat._id === categoryId);
@@ -191,93 +247,64 @@ const ConnectionsGame = () => {
     );
   };
 
-  // Render the grid with category groups after game over
-  const renderNumberGrid = () => {
-    if (!gameOver) {
-      // First render solved categories at the top
-      const solvedElements = solvedCategories.map((categoryId) => {
-        const category = categories.find((cat) => cat._id === categoryId);
-        const categoryNumbers = displayedNumbers
-          .filter((num) => num.categoryId === categoryId)
-          .sort((a, b) => a.value - b.value);
-
-        return (
-          <div key={categoryId} className={`category-row level-${category.level}`}>
-            <div className="category-title">{category.name.toUpperCase()}</div>
-            <div className="category-subtitle">
-              {categoryNumbers.map((num) => num.value).join(", ")}
-            </div>
-          </div>
-        );
-      });
-
-      // Then render unsolved numbers in the grid
-      const unsolvedNumbers = displayedNumbers
-        .filter((num) => !solvedCategories.includes(num.categoryId))
-        .map((num, index) => (
-          <button
-            key={`${num.value}-${num.categoryId}`}
-            className={`number-cell ${num.selected ? "selected" : ""}`}
-            onClick={() => handleNumberClick(index)}
-            disabled={gameOver}
-          >
-            {num.value}
-          </button>
-        ));
-
-      return (
-        <div className="gameplay-container">
-          {solvedElements}
-          <div className="gameplay-grid">{unsolvedNumbers}</div>
-        </div>
-      );
-    } else {
-      // Group numbers by category after game over
-      const numbersByCategory = {};
-      const categoryOrder = categories.sort(
-        (a, b) => a.level - b.level || categories.indexOf(a) - categories.indexOf(b)
-      );
-
-      displayedNumbers.forEach((num) => {
-        if (!numbersByCategory[num.categoryId]) {
-          numbersByCategory[num.categoryId] = [];
-        }
-        numbersByCategory[num.categoryId].push(num);
-      });
-
-      return categoryOrder.map((category) => {
-        const categoryNumbers = numbersByCategory[category._id] || [];
-        const sortedNumbers = categoryNumbers.sort((a, b) => a.value - b.value);
-        return (
-          <div key={category._id} className={`category-row level-${category.level}`}>
-            <div className="category-title">{category.name.toUpperCase()}</div>
-            <div className="category-subtitle">
-              {sortedNumbers.map((num) => num.value).join(", ")}
-            </div>
-          </div>
-        );
-      });
-    }
-  };
-
   // Handle number selection
   const handleNumberClick = (index) => {
-    if (selectedNumbers.length >= 4 && !displayedNumbers[index].selected) {
+    const clickedNumber = displayedNumbers[index];
+    
+    if (!clickedNumber) {
+      console.error("No number found at index:", index);
+      return;
+    }
+
+    if (clickedNumber.solved) {
+      setMessage("That number is part of a solved category!");
+      return;
+    }
+
+    if (selectedNumbers.length >= 4 && !clickedNumber.selected) {
       setMessage("You can only select 4 numbers at a time!");
       return;
     }
 
-    const newDisplayedNumbers = [...displayedNumbers];
-    newDisplayedNumbers[index].selected = !newDisplayedNumbers[index].selected;
-    setDisplayedNumbers(newDisplayedNumbers);
+    // Create new arrays to maintain state immutability
+    const newDisplayedNumbers = displayedNumbers.map((num, i) => 
+      i === index ? { ...num, selected: !num.selected } : num
+    );
 
-    if (newDisplayedNumbers[index].selected) {
-      setSelectedNumbers([...selectedNumbers, newDisplayedNumbers[index]]);
+    const newSelectedNumbers = clickedNumber.selected
+      ? selectedNumbers.filter(num => num.value !== clickedNumber.value)
+      : [...selectedNumbers, clickedNumber];
+
+    // Update state
+    setDisplayedNumbers(newDisplayedNumbers);
+    setSelectedNumbers(newSelectedNumbers);
+
+    // Update message
+    if (newSelectedNumbers.length === 4) {
+      setMessage("Press Submit to check your answer!");
     } else {
-      setSelectedNumbers(
-        selectedNumbers.filter((num) => num.value !== newDisplayedNumbers[index].value)
-      );
+      setMessage(`Select ${4 - newSelectedNumbers.length} more numbers.`);
     }
+  };
+
+  // Function to render the game grid
+  const renderGrid = () => {
+    return (
+      <div className="number-grid">
+        {displayedNumbers.map((number, index) => (
+          <button
+            key={`${number.value}-${index}`}
+            className={`number-cell ${number.selected ? "selected" : ""} ${
+              number.solved ? `solved-${number.categoryLevel}` : ""
+            } ${number.revealed ? "revealed" : ""}`}
+            onClick={() => handleNumberClick(index)}
+            disabled={gameOver || number.solved}
+          >
+            {number.value}
+          </button>
+        ))}
+      </div>
+    );
   };
 
   // Check if selected numbers form a valid category
@@ -285,22 +312,6 @@ const ConnectionsGame = () => {
     if (selectedNumbers.length !== 4) {
       setMessage("Please select exactly 4 numbers!");
       return;
-    }
-
-    // Count how many numbers are from each category
-    const categoryCount = new Map();
-    selectedNumbers.forEach((num) => {
-      const count = categoryCount.get(num.categoryId) || 0;
-      categoryCount.set(num.categoryId, count + 1);
-    });
-
-    // Find if any category has exactly 3 matches
-    let almostCategory = null;
-    for (const [categoryId, count] of categoryCount) {
-      if (count === 3) {
-        almostCategory = categories.find((cat) => cat._id === categoryId);
-        break;
-      }
     }
 
     // Check if all selected numbers belong to the same category
@@ -312,22 +323,28 @@ const ConnectionsGame = () => {
       setSolvedCategories([...solvedCategories, categoryId]);
 
       // Update displayed numbers to show they're solved
-      let newDisplayedNumbers = displayedNumbers.map((num) =>
-        selectedNumbers.some((selected) => selected.value === num.value)
-          ? { ...num, solved: true, selected: false }
-          : num
-      );
+      const newDisplayedNumbers = displayedNumbers.map(num => {
+        if (selectedNumbers.some(selected => selected.value === num.value)) {
+          return { ...num, solved: true, selected: false };
+        }
+        return { ...num, selected: false };
+      });
 
-      // Rearrange numbers to move solved ones to top
-      newDisplayedNumbers = rearrangeNumbers(newDisplayedNumbers);
+      // Sort numbers: solved categories at the top, grouped by category
+      const sortedNumbers = [...newDisplayedNumbers].sort((a, b) => {
+        // First sort by solved status
+        if (a.solved && !b.solved) return -1;
+        if (!a.solved && b.solved) return 1;
+        
+        // Then group by category
+        if (a.solved && b.solved) {
+          return a.categoryId.localeCompare(b.categoryId);
+        }
+        
+        return 0;
+      });
 
-      // Verify we still have 16 numbers
-      if (newDisplayedNumbers.length !== 16) {
-        console.error("Invalid number of squares after rearrangement");
-        newDisplayedNumbers = newDisplayedNumbers.slice(0, 16);
-      }
-
-      setDisplayedNumbers(newDisplayedNumbers);
+      setDisplayedNumbers(sortedNumbers);
       setSelectedNumbers([]);
       setMessage("Correct! Keep going!");
 
@@ -340,47 +357,57 @@ const ConnectionsGame = () => {
       setAttempts(attempts - 1);
       setUsedAttempts(usedAttempts + 1);
 
-      // Show "one away" message if they had 3 from the same category
-      if (almostCategory) {
-        // Find the one number that wasn't from this category
-        const wrongNumber = selectedNumbers.find((num) => num.categoryId !== almostCategory._id);
-        const correctNumbers = displayedNumbers
-          .filter((num) => num.categoryId === almostCategory._id && !selectedNumbers.includes(num))
-          .map((num) => num.value);
+      // Count how many numbers are from each category
+      const categoryCount = new Map();
+      selectedNumbers.forEach((num) => {
+        const count = categoryCount.get(num.categoryId) || 0;
+        categoryCount.set(num.categoryId, count + 1);
+      });
 
-        setMessage(`So close! You are one away from a category`);
+      // Find if any category has exactly 3 matches
+      let almostCategory = null;
+      for (const [categoryId, count] of categoryCount) {
+        if (count === 3) {
+          almostCategory = categories.find((cat) => cat._id === categoryId);
+          break;
+        }
       }
 
       if (attempts <= 1) {
-        // First, just mark numbers as revealed without rearranging
-        let newDisplayedNumbers = displayedNumbers.map((num) => ({
+        // Game over, reveal all categories
+        const newDisplayedNumbers = displayedNumbers.map(num => ({
           ...num,
           selected: false,
-          revealed: !num.solved,
+          revealed: !num.solved
         }));
 
-        setDisplayedNumbers(newDisplayedNumbers);
-        setMessage("Game Over! Revealing categories...");
+        // Sort numbers by category
+        const sortedNumbers = [...newDisplayedNumbers].sort((a, b) => {
+          // First sort by solved status
+          if (a.solved && !b.solved) return -1;
+          if (!a.solved && b.solved) return 1;
+          
+          // Then group by category
+          return a.categoryId.localeCompare(b.categoryId);
+        });
 
-        // Wait a brief moment before rearranging to allow reveal animation
-        setTimeout(() => {
-          // Now rearrange by level
-          newDisplayedNumbers = rearrangeNumbers(newDisplayedNumbers, true);
-          setDisplayedNumbers(newDisplayedNumbers);
-          setMessage("Game Over! Here are the correct categories:");
-          handleGameComplete(false);
-        }, 500);
+        setDisplayedNumbers(sortedNumbers);
+        setMessage("Game Over! Here are the correct categories:");
+        handleGameComplete(false);
       } else {
-        if (!almostCategory) {
-          setMessage(`Incorrect! ${attempts - 1} attempts remaining.`);
-        }
-        // Deselect all numbers
-        const newDisplayedNumbers = displayedNumbers.map((num) => ({
+        // Clear selections and update message
+        const newDisplayedNumbers = displayedNumbers.map(num => ({
           ...num,
-          selected: false,
+          selected: false
         }));
         setDisplayedNumbers(newDisplayedNumbers);
         setSelectedNumbers([]);
+        
+        if (almostCategory) {
+          setMessage(`So close! You are one away from a category. ${attempts - 1} attempts remaining.`);
+        } else {
+          setMessage(`Incorrect! ${attempts - 1} attempts remaining.`);
+        }
       }
     }
   };
@@ -389,15 +416,7 @@ const ConnectionsGame = () => {
     checkSelection();
   };
 
-  // Function to start a new game
-  const playAgain = () => {
-    setGameOver(false);
-    setGameWon(false);
-    setUsedAttempts(0);
-    startGame();
-  };
-
-  const generateRandomWords = (category) => {
+  const generateRandomWords = (category, usedNumbers = new Set()) => {
     if (!category || !category.sampleNumbers) return [];
 
     let selectedNumbers = [];
@@ -405,56 +424,109 @@ const ConnectionsGame = () => {
     // Special handling for sequence categories
     if (category.name.toLowerCase().includes("sequence")) {
       console.log("found sequence", category.name);
-      // For sequence categories, select 4 consecutive elements
+      // For sequence categories, select 4 consecutive elements that don't overlap
       const numbers = [...category.sampleNumbers];
-      console.log(numbers);
-      const startIndex = Math.floor(Math.random() * (numbers.length - 3)); // Ensure we have room for 4 consecutive elements
-      console.log(startIndex);
-      selectedNumbers = numbers.slice(startIndex, startIndex + 4);
-      console.log(selectedNumbers);
+      console.log("Available numbers:", numbers);
+
+      // Try different starting points until we find 4 consecutive numbers that don't overlap
+      let validSequenceFound = false;
+      let attempts = 0;
+      const maxAttempts = numbers.length - 3; // Maximum possible starting positions
+
+      while (!validSequenceFound && attempts < maxAttempts) {
+        const startIndex = Math.floor(Math.random() * (numbers.length - 3));
+        const potentialSequence = numbers.slice(startIndex, startIndex + 4);
+
+        // Check if any number in the sequence is already used
+        const hasOverlap = potentialSequence.some((num) => usedNumbers.has(num));
+
+        if (!hasOverlap) {
+          selectedNumbers = potentialSequence;
+          validSequenceFound = true;
+          // Add these numbers to used set
+          potentialSequence.forEach((num) => usedNumbers.add(num));
+        }
+
+        attempts++;
+      }
+
+      if (!validSequenceFound) {
+        console.log("Could not find non-overlapping sequence");
+        return null; // Signal that we need to try a different category
+      }
+
+      console.log("Selected sequence:", selectedNumbers);
     } else {
-      // For non-sequence categories, randomly select 4 numbers
+      // For non-sequence categories, randomly select 4 non-overlapping numbers
       const numbers = [...category.sampleNumbers];
-      while (selectedNumbers.length < 4 && numbers.length > 0) {
+      let attempts = 0;
+      const maxAttempts = numbers.length * 2; // Reasonable number of attempts
+
+      while (selectedNumbers.length < 4 && attempts < maxAttempts) {
         const randomIndex = Math.floor(Math.random() * numbers.length);
-        selectedNumbers.push(numbers.splice(randomIndex, 1)[0]);
+        const number = numbers[randomIndex];
+
+        if (!usedNumbers.has(number)) {
+          selectedNumbers.push(number);
+          usedNumbers.add(number);
+          numbers.splice(randomIndex, 1); // Remove the used number
+        }
+
+        attempts++;
+      }
+
+      if (selectedNumbers.length < 4) {
+        console.log("Could not find enough non-overlapping numbers");
+        return null; // Signal that we need to try a different category
       }
     }
 
     return selectedNumbers;
   };
 
+  const shuffleArray = (array) => {
+    return [...array].sort(() => Math.random() - 0.5);
+  };
+
   return (
     <div className="connections-game">
       <h1>Mathnections</h1>
+      {error && <div className="error-message">{error}</div>}
+      {message && <div className="message">{message}</div>}
 
       {!gameStarted ? (
         <div className="game-start">
-          <div className="difficulty-select">
-            <h2>Select Difficulty</h2>
-            <div className="difficulty-buttons">
-              <button
-                className={`difficulty-button ${difficulty === "easy" ? "selected" : ""}`}
-                onClick={() => setDifficulty("easy")}
-              >
-                Easy
-              </button>
-              <button
-                className={`difficulty-button ${difficulty === "medium" ? "selected" : ""}`}
-                onClick={() => setDifficulty("medium")}
-              >
-                Medium
-              </button>
-              <button
-                className={`difficulty-button ${difficulty === "hard" ? "selected" : ""}`}
-                onClick={() => setDifficulty("hard")}
-              >
-                Hard
-              </button>
-            </div>
+          <div className="difficulty-selector">
+            <label>
+              <input
+                type="radio"
+                value="easy"
+                checked={difficulty === "easy"}
+                onChange={(e) => setDifficulty(e.target.value)}
+              />
+              Easy
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="medium"
+                checked={difficulty === "medium"}
+                onChange={(e) => setDifficulty(e.target.value)}
+              />
+              Medium
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="hard"
+                checked={difficulty === "hard"}
+                onChange={(e) => setDifficulty(e.target.value)}
+              />
+              Hard
+            </label>
             <p className="difficulty-description">
-              {difficulty === "easy" && "2 Level 1 + 2 Level 2 categories"}
-              {difficulty === "medium" && "1 Level 1 + 2 Level 2 + 1 Level 3 categories"}
+              {difficulty === "easy" && "2 categories from level 1, 2 from level 2"}
+              {difficulty === "medium" && "1 from level 1, 2 from level 2, 1 from level 3"}
               {difficulty === "hard" && "1 category from each level (1-4)"}
             </p>
           </div>
@@ -463,30 +535,32 @@ const ConnectionsGame = () => {
           </button>
         </div>
       ) : (
-        <>
-          <div className="game-info">
-            <p className="attempts">Attempts remaining: {attempts}</p>
-          </div>
+        <div className="game-board">
+          {renderSolvedCategories()}
+          {renderRemainingNumbers()}
 
-          <div className={`number-grid ${gameOver ? "game-over" : ""}`}>{renderNumberGrid()}</div>
-
-          <div className="message">{message}</div>
-
-          {selectedNumbers.length === 4 && !gameOver && (
-            <button onClick={handleSubmit} className="submit-button">
+          {selectedNumbers.length > 0 && (
+            <button
+              className="submit-button"
+              onClick={handleSubmit}
+              disabled={selectedNumbers.length !== 4 || gameOver}
+            >
               Submit
             </button>
           )}
 
           {gameOver && (
-            <>
-              {!gameWon}
+            <div className="game-over">
+              <h2>{gameWon ? "Congratulations!" : "Game Over!"}</h2>
+              {renderCategoryReveal()}
               <button onClick={playAgain} className="play-again-button">
                 Play Again
               </button>
-            </>
+            </div>
           )}
-        </>
+
+          <div className="attempts-counter">Attempts remaining: {attempts}</div>
+        </div>
       )}
     </div>
   );

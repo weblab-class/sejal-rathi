@@ -6,23 +6,23 @@
 }
 
 .game-info {
-  margin: 10px 0;
   text-align: center;
+  margin-top: 20px;
 }
 
 .message {
-  font-size: 18px;
+  text-align: center;
   margin: 10px 0;
   font-weight: bold;
   color: #333;
 }
 
 .attempts {
-  font-size: 16px;
+  margin: 10px 0;
   color: #666;
 }
 
-.number-grid-unsolved {
+.number-grid {
   display: grid;
   grid-template-columns: repeat(4, 140px);
   gap: 10px;
@@ -30,16 +30,10 @@
   justify-content: center;
 }
 
-.number-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 140px);
-  margin: 10px auto;
-  justify-content: center;
-}
-
 .number-grid.game-over {
   display: flex;
   flex-direction: column;
+  align-items: center;
   margin: 0 auto;
   padding-top: 10px;
   width: 570px;
@@ -48,52 +42,49 @@
 .category-row {
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  align-items: center;
+  padding: 20px;
+  margin: 10px 0;
   border-radius: 8px;
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  color: #141444;
-  width: 570px;
-  height: 120px;
-  margin: 0 auto;
-  margin-top: 10px;
+  color: white;
+  width: 100%;
+  max-width: 600px;
 }
 
 .category-title {
-  text-align: center;
-  font-size: 30px;
   font-weight: bold;
-  margin-bottom: 5px;
+  font-size: 24px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
 }
 
 .category-subtitle {
-  text-align: center;
-  font-size: 24px;
-  margin-top: 20px;
+  font-size: 18px;
 }
 
 .numbers-grid {
   display: grid;
   grid-template-columns: repeat(4, 140px);
   gap: 10px;
-  column-gap: 0px;
+  margin: 10px auto;
+  justify-content: center;
 }
 
 .category-row.level-1 {
-  background-color: var(--level-1-color);
+  background-color: #f7da21;
+  color: black;
 }
 
 .category-row.level-2 {
-  background-color: var(--level-2-color);
+  background-color: #92c353;
 }
 
 .category-row.level-3 {
-  background-color: var(--level-3-color);
+  background-color: #8ab5e3;
 }
 
 .category-row.level-4 {
-  background-color: var(--level-4-color);
+  background-color: #c48ed7;
 }
 
 .game-over .number-cell {
@@ -236,97 +227,29 @@
 .solved-categories {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
   justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.error-message {
+  color: red;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.attempts-counter {
+  font-size: 18px;
+  font-weight: bold;
   margin-top: 10px;
 }
 
-.solved-category {
-  background-color: #c8e6c9;
-  color: #1b5e20;
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 1.1em;
-  margin-bottom: 10px;
-}
-
-.solved-category.solved-1 {
-  background-color: var(--level-1-color);
-  color: #854d0e;
-  border: 1px solid var(--level-1-border);
-}
-
-.solved-category.solved-2 {
-  background-color: var(--level-2-color);
-  color: #166534;
-  border: 1px solid var(--level-2-border);
-}
-
-.solved-category.solved-3 {
-  background-color: var(--level-3-color);
-  color: #1e40af;
-  border: 1px solid var(--level-3-border);
-}
-
-.solved-category.solved-4 {
-  background-color: var(--level-4-color);
-  color: #9d174d;
-  border: 1px solid var(--level-4-border);
-}
-
-.category-reveal {
-  margin: 10px 0;
+.game-board {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.level-categories {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.level-categories h3 {
-  margin: 0;
-  color: #666;
-}
-
-.revealed-category {
-  padding: 10px;
-  border-radius: 5px;
-  display: flex;
-  gap: 10px;
   align-items: center;
-}
-
-.revealed-category.revealed-1 {
-  background-color: var(--level-1-color);
-  border-color: var(--level-1-border);
-}
-
-.revealed-category.revealed-2 {
-  background-color: var(--level-2-color);
-  border-color: var(--level-2-border);
-}
-
-.revealed-category.revealed-3 {
-  background-color: var(--level-3-color);
-  border-color: var(--level-3-border);
-}
-
-.revealed-category.revealed-4 {
-  background-color: var(--level-4-color);
-  border-color: var(--level-4-border);
-}
-
-.category-name {
-  font-weight: bold;
-  min-width: 150px;
-}
-
-.category-numbers {
-  flex: 1;
+  gap: 20px;
+  padding: 20px;
 }
 
 .gameplay-container {
