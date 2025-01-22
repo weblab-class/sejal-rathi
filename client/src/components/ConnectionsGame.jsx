@@ -62,17 +62,16 @@ const ConnectionsGame = () => {
         throw new Error("Incorrect number of categories received");
       }
 
-      // Create the display numbers from the fetched categories
-      const numbers = [];
-      fetchedCategories.forEach((category) => {
-        const categoryNumbers = category.sampleNumbers.map((num) => ({
+      // Generate numbers for each category
+      const numbers = fetchedCategories.flatMap((category) => {
+        const numbers = generateRandomWords(category);
+        return numbers.map((num) => ({
           value: num,
           categoryId: category._id,
           categoryName: category.name,
           categoryLevel: category.level,
           selected: false,
         }));
-        numbers.push(...categoryNumbers);
       });
 
       // Verify we have exactly 16 numbers
@@ -219,7 +218,7 @@ const ConnectionsGame = () => {
           <button
             key={`${num.value}-${num.categoryId}`}
             className={`number-cell ${num.selected ? "selected" : ""}`}
-            onClick={() => handleNumberClick(displayedNumbers.indexOf(num))}
+            onClick={() => handleNumberClick(index)}
             disabled={gameOver}
           >
             {num.value}
@@ -229,9 +228,7 @@ const ConnectionsGame = () => {
       return (
         <div className="gameplay-container">
           {solvedElements}
-          <div className="gameplay-grid">
-            {unsolvedNumbers}
-          </div>
+          <div className="gameplay-grid">{unsolvedNumbers}</div>
         </div>
       );
     } else {
@@ -388,12 +385,43 @@ const ConnectionsGame = () => {
     }
   };
 
+  const handleSubmit = () => {
+    checkSelection();
+  };
+
   // Function to start a new game
   const playAgain = () => {
     setGameOver(false);
     setGameWon(false);
     setUsedAttempts(0);
     startGame();
+  };
+
+  const generateRandomWords = (category) => {
+    if (!category || !category.sampleNumbers) return [];
+
+    let selectedNumbers = [];
+
+    // Special handling for sequence categories
+    if (category.name.toLowerCase().includes("sequence")) {
+      console.log("found sequence", category.name);
+      // For sequence categories, select 4 consecutive elements
+      const numbers = [...category.sampleNumbers];
+      console.log(numbers);
+      const startIndex = Math.floor(Math.random() * (numbers.length - 3)); // Ensure we have room for 4 consecutive elements
+      console.log(startIndex);
+      selectedNumbers = numbers.slice(startIndex, startIndex + 4);
+      console.log(selectedNumbers);
+    } else {
+      // For non-sequence categories, randomly select 4 numbers
+      const numbers = [...category.sampleNumbers];
+      while (selectedNumbers.length < 4 && numbers.length > 0) {
+        const randomIndex = Math.floor(Math.random() * numbers.length);
+        selectedNumbers.push(numbers.splice(randomIndex, 1)[0]);
+      }
+    }
+
+    return selectedNumbers;
   };
 
   return (
@@ -445,7 +473,7 @@ const ConnectionsGame = () => {
           <div className="message">{message}</div>
 
           {selectedNumbers.length === 4 && !gameOver && (
-            <button onClick={checkSelection} className="submit-button">
+            <button onClick={handleSubmit} className="submit-button">
               Submit
             </button>
           )}

@@ -158,18 +158,18 @@ router.post("/categories/:categoryId/questions", async (req, res) => {
 // Get random categories based on difficulty
 router.get("/categories/random", async (req, res) => {
   try {
-    const difficulty = req.query.difficulty || 'medium';
+    const difficulty = req.query.difficulty || "medium";
     let levelCounts;
 
     // Define how many categories we need from each level
     switch (difficulty) {
-      case 'easy':
+      case "easy":
         levelCounts = { 1: 2, 2: 2 }; // 2 from level 1, 2 from level 2
         break;
-      case 'medium':
+      case "medium":
         levelCounts = { 1: 1, 2: 2, 3: 1 }; // 1 from level 1, 2 from level 2, 1 from level 3
         break;
-      case 'hard':
+      case "hard":
         levelCounts = { 1: 1, 2: 1, 3: 1, 4: 1 }; // 1 from each level
         break;
       default:
@@ -184,7 +184,7 @@ router.get("/categories/random", async (req, res) => {
       // Get all categories for this level
       const levelCategories = await Category.aggregate([
         { $match: { level: parseInt(level) } },
-        { $sample: { size: count * 2 } } // Get extra categories in case some don't have enough unique numbers
+        { $sample: { size: count * 2 } }, // Get extra categories in case some don't have enough unique numbers
       ]);
 
       let categoriesAdded = 0;
@@ -192,7 +192,7 @@ router.get("/categories/random", async (req, res) => {
         if (categoriesAdded >= count) break;
 
         // Filter out numbers that are already used
-        const availableNumbers = category.sampleNumbers.filter(num => !usedNumbers.has(num));
+        /*const availableNumbers = category.sampleNumbers.filter(num => !usedNumbers.has(num));
         
         if (availableNumbers.length >= 4) {
           // Take exactly 4 random numbers from available numbers
@@ -210,7 +210,9 @@ router.get("/categories/random", async (req, res) => {
           });
           
           categoriesAdded++;
-        }
+        }*/
+        selectedCategories.push(category);
+        categoriesAdded++;
       }
 
       if (categoriesAdded < count) {
@@ -473,7 +475,7 @@ router.post("/gameroom/:code/leave", auth.ensureLoggedIn, (req, res) => {
 // Question API routes
 router.get("/question", (req, res) => {
   const { category } = req.query;
-  
+
   // For now, return a sample question. You can expand this to use a database later
   const questions = {
     easy: [
@@ -495,13 +497,13 @@ router.get("/question", (req, res) => {
 
   const categoryQuestions = questions[category] || questions.easy;
   const randomQuestion = categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
-  
+
   res.send(randomQuestion);
 });
 
 router.post("/check-answer", (req, res) => {
   const { questionId, answer } = req.body;
-  
+
   // For now, we'll use the same questions object
   const allQuestions = [
     { _id: "1", question: "What is 2 + 2?", answer: "4" },
@@ -515,14 +517,14 @@ router.post("/check-answer", (req, res) => {
     { _id: "9", question: "What is 625 ÷ 25?", answer: "25" },
   ];
 
-  const question = allQuestions.find(q => q._id === questionId);
-  
+  const question = allQuestions.find((q) => q._id === questionId);
+
   if (!question) {
     return res.status(404).send({ msg: "Question not found" });
   }
 
   const isCorrect = String(question.answer).toLowerCase() === String(answer).toLowerCase();
-  
+
   res.send({
     correct: isCorrect,
     message: isCorrect ? "Correct!" : "Incorrect, try again!",
@@ -575,7 +577,7 @@ router.post("/stats/connections", auth.ensureLoggedIn, async (req, res) => {
     if (won) {
       const totalGamesWon = user.stats.connections.gamesWon;
       const currentAverage = user.stats.connections.averageAttempts;
-      user.stats.connections.averageAttempts = 
+      user.stats.connections.averageAttempts =
         (currentAverage * (totalGamesWon - 1) + attempts) / totalGamesWon;
     }
 
