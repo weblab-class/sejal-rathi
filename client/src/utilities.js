@@ -14,7 +14,7 @@ async function fetchWithCredentials(endpoint, options = {}) {
   const cleanEndpoint = endpoint.replace(/\/+/g, '/');
   
   // Always use the backend server URL for auth routes
-  const baseUrl = cleanEndpoint.startsWith('/auth') ? 'http://localhost:3000' : '';
+  const baseUrl = import.meta.env.PROD ? '' : 'http://localhost:3000';
   const url = `${baseUrl}${cleanEndpoint}`;
   
   const headers = {

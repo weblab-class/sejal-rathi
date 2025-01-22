@@ -1,7 +1,7 @@
 import socketIOClient from "socket.io-client";
 import { get, post } from "./utilities";
 
-const SOCKET_SERVER = "http://localhost:3000";
+const SOCKET_SERVER = import.meta.env.PROD ? '' : "http://localhost:3000";
 
 let socket = null;
 

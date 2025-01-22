@@ -37,10 +37,13 @@ const auth = require("./auth");
 const app = express();
 const server = http.createServer(app);
 
-// Enable CORS
+// Allow requests from your deployed frontend domain and localhost during development
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "https://x-factor-puzzles.onrender.com",
+      "http://localhost:5173",
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
