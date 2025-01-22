@@ -51,12 +51,6 @@ function login(req, res) {
 }
 
 function logout(req, res) {
-  const userSocket = socketManager.getSocketFromUserID(req.session.user?._id);
-  if (userSocket) {
-    // delete user's socket if they logged out
-    socketManager.removeUser(req.session.user, userSocket);
-  }
-
   req.session.user = null;
   res.send({});
 }
@@ -68,8 +62,8 @@ function populateCurrentUser(req, res, next) {
 }
 
 function ensureLoggedIn(req, res, next) {
-  if (!req.user) {
-    return res.status(401).send({ error: "Not logged in" });
+  if (!req.session || !req.session.user) {
+    return res.status(401).send({ msg: "Not logged in" });
   }
   next();
 }
@@ -78,11 +72,12 @@ function ensureLoggedIn(req, res, next) {
 router.post("/login", login);
 router.post("/logout", logout);
 router.get("/whoami", (req, res) => {
-  if (!req.user) {
-    // not logged in
-    return res.send({});
+  if (req.session && req.session.user) {
+    res.send(req.session.user);
+  } else {
+    // Not logged in
+    res.send({});
   }
-  res.send(req.user);
 });
 
 module.exports = {

@@ -47,7 +47,6 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    exposedHeaders: ["set-cookie"],
   })
 );
 
@@ -60,11 +59,21 @@ const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "session-secret",
   resave: false,
   saveUninitialized: false,
+  proxy: true,
+  cookie: {
+    sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 });
 
+// Trust first proxy
+app.set('trust proxy', 1);
+
+// Use session middleware
 app.use(sessionMiddleware);
 
-// Auth middleware
+// Populate user
 app.use(auth.populateCurrentUser);
 
 // API routes
@@ -72,8 +81,7 @@ app.use("/api", api);
 app.use("/auth", auth.router);
 
 // Initialize socket with session support
-const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
-socketManager.init(server, wrap(sessionMiddleware));
+socketManager.init(server, sessionMiddleware);
 
 // Serve static files
 const reactPath = path.resolve(__dirname, "..", "client", "dist");

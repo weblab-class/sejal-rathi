@@ -44,13 +44,14 @@ async function fetchWithCredentials(endpoint, options = {}) {
 }
 
 export function get(endpoint, options = {}) {
-  return fetchWithCredentials(endpoint, { method: "GET", ...options });
+  return fetchWithCredentials(endpoint, { method: "GET", credentials: 'include', ...options });
 }
 
 export function post(endpoint, body, options = {}) {
   return fetchWithCredentials(endpoint, {
     method: "POST",
     body: JSON.stringify(body),
+    credentials: 'include',
     ...options,
   });
 }
@@ -59,10 +60,11 @@ export function put(endpoint, body, options = {}) {
   return fetchWithCredentials(endpoint, {
     method: "PUT",
     body: JSON.stringify(body),
+    credentials: 'include',
     ...options,
   });
 }
 
 export function del(endpoint, options = {}) {
-  return fetchWithCredentials(endpoint, { method: "DELETE", ...options });
+  return fetchWithCredentials(endpoint, { method: "DELETE", credentials: 'include', ...options });
 }

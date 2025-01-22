@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { get, post } from "../utilities";
-import { socket } from "../client-socket";
+import { getSocket } from "../client-socket";
 import { useTheme } from "./context/ThemeContext";
 import "./TicTacToe.css";
 
@@ -68,7 +68,10 @@ const TicTacToe = () => {
   }, []);
 
   useEffect(() => {
-    // Join game room when component mounts
+    const socket = getSocket();
+    if (!socket) return;
+
+    // Join the game room
     if (mode === "two-player" && gameCode) {
       socket.emit("game:join", { gameCode, user: { _id: socket.id } });
     }
@@ -84,6 +87,9 @@ const TicTacToe = () => {
   }, [mode, gameCode]);
 
   useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
     socket.on("game:start", ({ players, board }) => {
       setGameStarted(true);
       const opponentPlayer = players.find((p) => p.socket !== socket.id);
@@ -212,6 +218,9 @@ const TicTacToe = () => {
       const userAnswer = prompt(`Solve: ${cell.value}`);
 
       if (userAnswer !== null) {
+        const socket = getSocket();
+        if (!socket) return;
+
         socket.emit("game:move", {
           gameCode,
           cellIndex: index,

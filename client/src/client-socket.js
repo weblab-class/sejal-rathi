@@ -1,55 +1,43 @@
 import socketIOClient from "socket.io-client";
-import { get, post } from "./utilities";
+import { post } from "./utilities";
 
-const SOCKET_SERVER = import.meta.env.PROD ? '' : "http://localhost:3000";
+// In production, connect to the same origin
+const SOCKET_SERVER = import.meta.env.PROD ? "" : "http://localhost:3000";
 
 let socket = null;
 
 export const initiateSocket = async () => {
   try {
-    // Don't create a new socket if one already exists
     if (socket) {
-      console.log("Socket already exists:", socket.id);
       return socket;
     }
 
-    console.log("Creating new socket connection...");
     socket = socketIOClient(SOCKET_SERVER, {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
+      withCredentials: true
     });
 
-    socket.on("connect", () => {
-      console.log("Socket connected with ID:", socket.id);
-      post("/api/initsocket", { socketid: socket.id })
-        .then(() => {
-          console.log("Socket initialized successfully with server");
-        })
-        .catch((err) => {
+    await new Promise((resolve, reject) => {
+      socket.on("connect", async () => {
+        try {
+          await post("/api/initsocket", { socketid: socket.id });
+          resolve();
+        } catch (err) {
           console.error("Failed to initialize socket:", err);
           socket.disconnect();
           socket = null;
-        });
-    });
+          reject(err);
+        }
+      });
 
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-    });
-
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected. Reason:", reason);
-    });
-
-    // Add debug listeners for all events
-    socket.onAny((eventName, ...args) => {
-      console.log(`Socket Event '${eventName}' received:`, args);
+      socket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+        reject(error);
+      });
     });
 
     return socket;
   } catch (error) {
-    console.error("Error initializing socket:", error);
+    console.error("Socket initialization error:", error);
     return null;
   }
 };
@@ -61,12 +49,14 @@ export const disconnectSocket = () => {
   }
 };
 
-export { socket };
 export const getSocket = () => socket;
 
+// Export the socket instance directly
+export { socket };
+
 export default {
+  socket,
   initiateSocket,
   disconnectSocket,
   getSocket,
-  socket,
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "./context/ThemeContext";
-import { socket } from "../client-socket";
+import { getSocket } from "../client-socket";
 import { get, post } from "../utilities";
 import GameCountdown from "./GameCountdown";
 import "./TicTacToeWaitingRoom.css";
@@ -50,6 +50,8 @@ const TicTacToeWaitingRoom = () => {
 
   // Socket event handlers
   useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
     console.log("Setting up socket listeners for game code:", gameCode);
 
     // Explicitly join the room
@@ -100,6 +102,8 @@ const TicTacToeWaitingRoom = () => {
   }, [gameCode, navigate]);
 
   const handleStartGame = () => {
+    const socket = getSocket();
+    if (!socket) return;
     console.log("Starting game with:", { gameCode, category });
     socket.emit("game_started", { gameCode, category });
   };

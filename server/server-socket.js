@@ -74,16 +74,20 @@ const checkTie = (currentBoard) => {
 const init = (server, sessionMiddleware) => {
   io = socketio(server, {
     cors: {
-      origin: ["http://localhost:5173", "http://localhost:3000"],
-      methods: ["GET", "POST"],
+      origin: [
+        "https://x-factor-puzzles.onrender.com",
+        "http://localhost:5173"
+      ],
       credentials: true,
-    },
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type"]
+    }
   });
 
-  // Use session middleware if provided
-  if (sessionMiddleware) {
-    io.use(sessionMiddleware);
-  }
+  // Use session middleware
+  io.use((socket, next) => {
+    sessionMiddleware(socket.request, {}, next);
+  });
 
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id}`);
@@ -94,28 +98,13 @@ const init = (server, sessionMiddleware) => {
     });
 
     socket.on("disconnect", () => {
-      console.log(`Socket disconnected: ${socket.id}`);
       const user = getUserFromSocketID(socket.id);
-      removeUser(user, socket);
-
-      // Clean up game rooms when a player disconnects
-      for (const [gameCode, room] of gameRooms.entries()) {
-        const playerIndex = room.inGamePlayers.findIndex((p) => p.socket === socket.id);
-        if (playerIndex !== -1) {
-          console.log(`Player ${socket.id} disconnected from game ${gameCode}`);
-          room.inGamePlayers.splice(playerIndex, 1);
-          if (room.inGamePlayers.length === 0) {
-            console.log(`Removing empty room ${gameCode}`);
-            gameRooms.delete(gameCode);
-          } else {
-            io.to(gameCode).emit("player:left");
-          }
-        }
-      }
+      if (user) removeUser(user, socket);
+      console.log(`Socket ${socket.id} disconnected`);
     });
 
-    socket.on("error", (err) => {
-      console.log(`Socket error: ${socket.id} - ${err}`);
+    socket.on("error", (error) => {
+      console.error(`Socket ${socket.id} error:`, error);
     });
 
     // Game room management

@@ -35,20 +35,14 @@ router.get("/whoami", (req, res) => {
   res.send(req.user);
 });
 
-router.post("/initsocket", (req, res) => {
-  if (!req.user) {
-    res.status(403).send({ msg: "Not logged in" });
-    return;
-  }
-
+router.post("/initsocket", auth.ensureLoggedIn, (req, res) => {
   const socket = socketManager.getSocketFromSocketID(req.body.socketid);
-  if (!socket) {
-    res.status(400).send({ msg: "Invalid socket connection" });
-    return;
+  if (socket !== null) {
+    socketManager.addUser(req.session.user, socket);
+    res.send({});
+  } else {
+    res.status(400).send({ msg: "Invalid socket ID" });
   }
-
-  socketManager.addUser(req.user, socket);
-  res.send({});
 });
 
 router.post("/disconnectsocket", (req, res) => {

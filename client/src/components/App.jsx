@@ -19,7 +19,7 @@ import { SoundProvider } from "./context/SoundContext";
 
 import "../utilities.css";
 import "./pages/App.css";
-import { socket, initiateSocket, disconnectSocket } from "../client-socket";
+import { initiateSocket, disconnectSocket } from "../client-socket";
 import { get, post } from "../utilities";
 
 const App = () => {
@@ -33,7 +33,8 @@ const App = () => {
         const user = await get("/api/whoami");
         if (user._id) {
           setUserId(user._id);
-          await initiateSocket(user._id);
+          // Only initialize socket if user is logged in
+          await initiateSocket();
         }
       } catch (error) {
         console.log("Error initializing auth:", error);
@@ -52,7 +53,8 @@ const App = () => {
     try {
       const user = await post("/auth/login", { token });
       setUserId(user._id);
-      await initiateSocket(user._id);
+      // Initialize socket after successful login
+      await initiateSocket();
       navigate("/games");
     } catch (error) {
       console.log("Error logging in:", error);
@@ -62,8 +64,8 @@ const App = () => {
   const handleLogout = () => {
     setUserId(undefined);
     post("/api/logout");
-    googleLogout();
     disconnectSocket();
+    googleLogout();
     navigate("/");
   };
 
