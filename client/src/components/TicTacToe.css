@@ -63,7 +63,7 @@ body.dark .game-status {
   background: var(--primary-dim);
 }
 
-.game-board {
+.tic-game-board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;

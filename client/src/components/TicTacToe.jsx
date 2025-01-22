@@ -315,7 +315,7 @@ const TicTacToe = () => {
         )}
       </div>
 
-      <div className="game-board">
+      <div className="tic-game-board">
         {board.map((cell, index) => (
           <div
             key={index}
