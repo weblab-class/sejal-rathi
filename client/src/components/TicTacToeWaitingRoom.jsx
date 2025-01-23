@@ -1,172 +1,135 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useTheme } from "./context/ThemeContext";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { get } from "../utilities";
 import { getSocket } from "../client-socket";
-import { get, post } from "../utilities";
 import GameCountdown from "./GameCountdown";
 import "./TicTacToeWaitingRoom.css";
-
-const REFRESH_INTERVAL = 3000; // Check every 3 seconds
 
 const TicTacToeWaitingRoom = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDarkMode } = useTheme();
-  const { gameCode, isHost } = location.state || {};
-  const [category, setCategory] = useState("easy");
-  const [isGameReady, setIsGameReady] = useState(false);
+  const { gameCode } = useParams();
+  const { isHost } = location.state || {};
+
   const [error, setError] = useState("");
   const [players, setPlayers] = useState([]);
   const [showCountdown, setShowCountdown] = useState(false);
+  const [category, setCategory] = useState(location.state?.category || "easy");
+  const [gameQuestions, setGameQuestions] = useState(null);
 
-  const checkRoom = async () => {
-    try {
-      const room = await get("/api/gameroom/" + gameCode);
-      setPlayers(room.players);
-      setIsGameReady(room.players.length === 2);
-      setCategory(room.category || "easy");
-    } catch (err) {
-      console.log("Error checking room:", err);
-      setError(err.response?.data?.error || "Room not found");
-      // Navigate back to setup after a delay
-      setTimeout(() => {
-        navigate("/tictactoe/setup");
-      }, 2000);
-    }
-  };
-
-  // Initial room check
-  useEffect(() => {
-    checkRoom();
-  }, [gameCode]);
-
-  // Set up periodic room check
-  useEffect(() => {
-    const intervalId = setInterval(checkRoom, REFRESH_INTERVAL);
-
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
-  }, [gameCode]);
-
-  // Socket event handlers
   useEffect(() => {
     const socket = getSocket();
-    if (!socket) return;
-    console.log("Setting up socket listeners for game code:", gameCode);
+    if (!socket) {
+      setError("No socket connection available");
+      return;
+    }
 
-    // Explicitly join the room
-    socket.emit("join room", gameCode);
+    let mounted = true;
 
-    // Debug socket connection
-    console.log("Socket connected:", socket.connected);
-    console.log("Socket id:", socket.id);
+    socket.emit("join room", { gameCode, user: { _id: socket.id } });
 
-    socket.on("connect", () => {
-      console.log("Socket connected in waiting room");
-      socket.emit("join room", gameCode);
+    socket.on("game:error", (error) => {
+      if (!mounted) return;
+      console.error("Game error:", error);
+      setError(error.message || "An error occurred");
+      setTimeout(() => navigate("/tictactoe/setup"), 2000);
     });
 
     socket.on("player joined", (data) => {
-      console.log("Player joined event:", data);
-      setPlayers(data.players);
-      setIsGameReady(data.players.length === 2);
-      checkRoom();
+      if (!mounted) return;
+      console.log("Player joined:", data);
+      setPlayers(data.players || []);
     });
 
-    socket.on("player left", (data) => {
-      console.log("Player left event:", data);
-      setPlayers(data.players);
-      setIsGameReady(false);
-      checkRoom();
+    socket.on("questions:received", ({ questions, board }) => {
+      if (!mounted) return;
+      console.log("Questions received in waiting room:", { questions, board });
+      setGameQuestions({ questions, board });
     });
 
-    socket.on("game_started", (data) => {
-      console.log("Game started event received:", data);
+    socket.on("game:start", () => {
+      if (!mounted) return;
+      console.log("Game starting with questions:", gameQuestions);
       setShowCountdown(true);
     });
 
-    // Debug listener for all events
-    socket.onAny((eventName, ...args) => {
-      console.log(`Socket event received: ${eventName}`, args);
-    });
-
     return () => {
-      console.log("Cleaning up socket listeners for game code:", gameCode);
-      post("/api/gameroom/" + gameCode + "/leave").catch(console.error);
-
-      socket.off("connect");
+      mounted = false;
+      socket.off("game:error");
       socket.off("player joined");
-      socket.off("player left");
-      socket.off("game_started");
+      socket.off("game:start");
+      socket.off("questions:received");
     };
   }, [gameCode, navigate]);
 
   const handleStartGame = () => {
     const socket = getSocket();
     if (!socket) return;
-    console.log("Starting game with:", { gameCode, category });
-    socket.emit("game_started", { gameCode, category });
+
+    console.log("Starting game with category:", category);
+    socket.emit("start game", {
+      gameCode,
+      category
+    });
   };
 
   if (error) {
     return (
-      <div className={`waiting-room-container ${isDarkMode ? "dark" : "light"}`}>
-        <div className="waiting-room-box">
-          <div className="error-message">{error}</div>
-          <p>Redirecting to setup...</p>
-        </div>
+      <div className="tictactoe-waiting">
+        <div className="error-message">{error}</div>
       </div>
     );
   }
 
+  if (showCountdown) {
+    return <GameCountdown 
+      gameCode={gameCode} 
+      category={category}
+      initialQuestions={gameQuestions}
+    />;
+  }
+
   return (
-    <div className={`waiting-room-container ${isDarkMode ? "dark" : "light"}`}>
-      {showCountdown && <GameCountdown gameCode={gameCode} category={category} />}
-      <h1>Waiting Room</h1>
-      <div className="waiting-room-box">
-        <div className="room-code-display">
-          <h2>Room Code</h2>
-          <div className="code">{gameCode}</div>
-          <p>Share this code with your opponent</p>
-        </div>
+    <div className="tictactoe-waiting">
+      <h2>Game Code: {gameCode}</h2>
+      <div className="player-list">
+        <h3>Players ({players.length}/2):</h3>
+        {players.map((player, index) => (
+          <div key={index} className="player-item">
+            Player {index + 1} ({player.symbol})
+            {player.isHost ? " (Host)" : ""}
+          </div>
+        ))}
+      </div>
 
-        <div className="players-list">
-          <h2>Players</h2>
-          {players.map((player, index) => (
-            <div key={index} className="player-item">
-              {player.name} {player.isHost ? "(Host)" : ""}
-            </div>
-          ))}
-        </div>
-
+      {isHost && (
         <div className="category-selection">
-          <h2>Select Category</h2>
-          <select
+          <h3>Category:</h3>
+          <select 
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="category-select"
-            disabled={!isHost}
           >
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
           </select>
         </div>
+      )}
 
-        <div className="status-message">
-          {!isGameReady
-            ? "Waiting for opponent to join..."
-            : isHost
-            ? "Both players are ready! You can start the game."
-            : "Waiting for host to start the game..."}
+      {players.length < 2 ? (
+        <div className="waiting-message">
+          Waiting for opponent to join...
         </div>
-
-        {isHost && isGameReady && (
-          <button className="start-button" onClick={handleStartGame}>
-            Start Game
-          </button>
-        )}
-      </div>
+      ) : isHost ? (
+        <button className="start-button" onClick={handleStartGame}>
+          Start Game
+        </button>
+      ) : (
+        <div className="waiting-message">
+          Waiting for host to start the game...
+        </div>
+      )}
     </div>
   );
 };

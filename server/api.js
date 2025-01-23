@@ -325,38 +325,72 @@ router.post("/settings", auth.ensureLoggedIn, (req, res) => {
 });
 
 // Game Room endpoints
+router.get("/gameroom/:gameCode", (req, res) => {
+  const gameCode = req.params.gameCode;
+  
+  GameRoom.findOne({ gameCode })
+    .then((room) => {
+      if (!room) {
+        res.status(404).send({ error: "Game room not found" });
+        return;
+      }
+
+      console.log("Found game room:", room);
+      res.send({
+        gameCode: room.gameCode,
+        category: room.category,
+        players: room.players,
+        started: room.gameStarted,
+        questions: room.questions,
+        board: room.board,
+        currentPlayer: room.currentPlayer,
+        winner: room.winner,
+      });
+    })
+    .catch((err) => {
+      console.error("Error finding game room:", err);
+      res.status(500).send({ error: "Failed to get game room" });
+    });
+});
+
 router.post("/gameroom/create", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const { category } = req.body;
-
-    // Get the current user from the auth middleware
-    const user = req.user;
+    const user = await User.findById(req.user._id);
     if (!user) {
-      console.log("No user found in request");
-      return res.status(401).send({ error: "User not authenticated" });
+      return res.status(404).send({ error: "User not found" });
     }
 
+    // Generate a unique game code using the static method
+    const gameCode = await GameRoom.generateGameCode();
     console.log("Creating game room for user:", user._id, "with code:", gameCode);
 
     const newRoom = new GameRoom({
-      code: gameCode,
-      category: category || "easy",
-      players: [
-        {
-          userId: user._id,
-          name: user.name,
-          isHost: true,
-        },
-      ],
+      gameCode: gameCode,
+      category: req.body.category || "easy",
+      players: [{
+        userId: user._id,
+        name: user.name,
+        isHost: true,
+        symbol: "X"
+      }],
+      questions: [],
+      board: Array(9).fill().map(() => ({
+        value: "",
+        answer: "",
+        solved: false,
+        player: null
+      })),
+      gameStarted: false,
+      currentPlayer: "X"
     });
 
+    console.log("New room object:", newRoom);
     const savedRoom = await newRoom.save();
     console.log("Game room created:", savedRoom);
-    res.send({ gameCode: savedRoom.code });
+    res.send({ gameCode: savedRoom.gameCode });
   } catch (err) {
     console.error("Error in /gameroom/create:", err);
-    res.status(500).send({ error: "Could not create game room" });
+    res.status(500).send({ error: err.message || "Could not create game room" });
   }
 });
 
@@ -372,7 +406,7 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
 
     console.log("User attempting to join room:", user._id, gameCode);
 
-    const room = await GameRoom.findOne({ code: gameCode });
+    const room = await GameRoom.findOne({ gameCode });
     if (!room) {
       return res.status(404).send({ error: "Invalid room code" });
     }
@@ -392,6 +426,7 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
       userId: user._id,
       name: user.name,
       isHost: false,
+      symbol: "O"
     });
 
     await room.save();
@@ -401,49 +436,6 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
     console.error("Error in /gameroom/join:", err);
     res.status(500).send({ error: "Could not join game room" });
   }
-});
-
-router.get("/gameroom/:code", auth.ensureLoggedIn, (req, res) => {
-  GameRoom.findOne({ code: req.params.code })
-    .then((room) => {
-      if (!room) {
-        return res.status(404).send({ error: "Room not found" });
-      }
-      res.send(room);
-    })
-    .catch((err) => {
-      console.log("Error getting game room:", err);
-      res.status(500).send({ error: "Could not get game room" });
-    });
-});
-
-router.post("/gameroom/:code/leave", auth.ensureLoggedIn, (req, res) => {
-  const user = req.user;
-  if (!user) {
-    return res.status(401).send({ error: "User not authenticated" });
-  }
-
-  GameRoom.findOne({ code: req.params.code })
-    .then((room) => {
-      if (!room) {
-        return res.status(404).send({ error: "Room not found" });
-      }
-
-      room.players = room.players.filter((p) => p.userId !== user._id.toString());
-
-      if (room.players.length === 0) {
-        return GameRoom.deleteOne({ code: req.params.code });
-      }
-
-      return room.save();
-    })
-    .then(() => {
-      res.send({ success: true });
-    })
-    .catch((err) => {
-      console.log("Error leaving game room:", err);
-      res.status(500).send({ error: "Could not leave game room" });
-    });
 });
 
 // Question API routes

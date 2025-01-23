@@ -1,151 +1,163 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { get, post } from "../utilities";
 import { getSocket } from "../client-socket";
 import { useTheme } from "./context/ThemeContext";
 import "./TicTacToe.css";
 
 const TicTacToe = () => {
+  const { gameCode } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
+
+  const { questions, board: initialBoard } = location.state || {};
+
+  console.log("TicTacToe mounted with location state:", location.state);
+  
+  console.log("Extracted questions and board:", { questions, initialBoard });
 
   const [userId, setUserId] = useState(null);
-
-  const { category = "easy", mode = "two-player", timeLimit = 5, gameCode } = location.state || {};
-
-  const [board, setBoard] = useState(
-    Array(9)
-      .fill()
-      .map(() => ({ value: "", solved: false, player: null }))
-  );
-  const [playerSymbol, setPlayerSymbol] = useState(null);
+  const [mode, setMode] = useState(gameCode ? "two-player" : "single");
+  const [category, setCategory] = useState(location.state?.category || "easy");
+  const [timeLimit, setTimeLimit] = useState(5);
+  const [questionsState, setQuestions] = useState(questions || []);
+  const [board, setBoard] = useState(initialBoard || Array(9).fill(null));
+  const [playerSymbol, setPlayerSymbol] = useState(mode === "single" ? "X" : null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
   const [timeLeft, setTimeLeft] = useState(timeLimit * 60);
-  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [opponent, setOpponent] = useState(null);
-  const [selectedCell, setSelectedCell] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [showResult, setShowResult] = useState(null);
 
-  const { isDarkMode } = useTheme();
-
+  // Load game state on mount
   useEffect(() => {
-    const loadSinglePlayerQuestions = async () => {
-      try {
-        console.log("Fetching questions for single player mode:", category);
-        setLoading(true);
-        const fetchedQuestions = await get("/api/questions/" + category);
-        console.log("Fetched questions:", fetchedQuestions);
+    const loadGameState = async () => {
+      if (mode === "two-player" && gameCode) {
+        try {
+          console.log("Loading game state for room:", gameCode);
+          console.log("Location state:", location.state);
 
-        if (fetchedQuestions && fetchedQuestions.length > 0) {
-          setQuestions(fetchedQuestions);
-          const newBoard = Array(9).fill().map((_, index) => ({
-            value: fetchedQuestions[index].question,
-            answer: fetchedQuestions[index].answer,
-            solved: false,
-            player: null,
-          }));
-          setBoard(newBoard);
-          setGameStarted(true);
-          setPlayerSymbol("X");  // Single player is always X
-          setLoading(false);
-        } else {
-          throw new Error("No questions received from server");
+          // First try to use state from navigation
+          if (location.state?.questions && location.state?.board) {
+            console.log("Using questions and board from navigation state");
+            setQuestions(location.state.questions);
+            setBoard(location.state.board);
+            setGameStarted(true);
+            setLoading(false);
+            return;
+          }
+
+          // If no navigation state, fetch from server
+          const state = await get(`/api/gameroom/${gameCode}`);
+          console.log("Received game state from server:", state);
+          
+          if (state && !state.error) {
+            if (state.questions && state.board) {
+              setQuestions(state.questions);
+              setBoard(state.board);
+              setGameStarted(state.started || false);
+              setLoading(false);
+            } else {
+              console.error("Game state missing questions or board");
+              navigate("/tictactoe/setup");
+            }
+          } else {
+            console.error("No existing game state found:", state);
+            navigate("/tictactoe/setup");
+          }
+        } catch (err) {
+          console.error("Error loading game state:", err);
+          navigate("/tictactoe/setup");
         }
-      } catch (err) {
-        console.error("Error fetching questions:", err);
-        setError(err.message || "Failed to fetch questions");
-        setLoading(false);
-        setTimeout(() => navigate("/tictactoe/setup"), 2000);
       }
     };
 
-    // Only load questions for single player mode
-    if (mode === "single") {
-      loadSinglePlayerQuestions();
-    }
-  }, [category, mode, navigate]);
+    loadGameState();
+  }, [mode, gameCode, navigate, location.state]);
 
+  // Load questions for single player mode
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
-    // Join the game room
-    if (mode === "two-player" && gameCode) {
-      socket.emit("game:join", { gameCode, user: { _id: socket.id } });
-    }
-
-    // Socket event listeners
-    socket.on("game:joined", ({ symbol }) => {
-      setPlayerSymbol(symbol);
-      console.log("Joined as player:", symbol);
-      if (symbol === "X") {
-        setGameStarted(false); // Host waits for player 2
-      }
-    });
-
-    socket.on("game:start", async ({ players }) => {
-      console.log("Game starting, players:", players);
-      const opponentPlayer = players.find((p) => p.socket !== socket.id);
-      if (opponentPlayer) {
-        setOpponent(opponentPlayer);
-      }
-
-      // If player X, fetch questions during countdown
-      if (playerSymbol === "X") {
+    const loadQuestions = async () => {
+      if (mode === "single") {
         try {
-          console.log("Fetching questions for category:", category);
-          setLoading(true);
+          console.log("Loading questions for single player");
           const fetchedQuestions = await get("/api/questions/" + category);
-          console.log("Fetched questions:", fetchedQuestions);
 
           if (fetchedQuestions && fetchedQuestions.length > 0) {
             setQuestions(fetchedQuestions);
-            const newBoard = Array(9).fill().map((_, index) => ({
-              value: fetchedQuestions[index].question,
-              answer: fetchedQuestions[index].answer,
-              solved: false,
-              player: null,
-            }));
+            const newBoard = Array(9)
+              .fill()
+              .map((_, index) => ({
+                value: fetchedQuestions[index].question,
+                answer: fetchedQuestions[index].answer,
+                solved: false,
+                player: null,
+              }));
             setBoard(newBoard);
-            
-            // Share questions with other player
-            socket.emit("questions:share", { 
-              gameCode, 
-              questions: fetchedQuestions,
-              board: newBoard
-            });
+            setGameStarted(true);
+            setPlayerSymbol("X"); // Single player is always X
           } else {
-            throw new Error("No questions received from server");
+            throw new Error("No questions available");
           }
         } catch (err) {
-          console.error("Error fetching questions:", err);
-          setError(err.message || "Failed to fetch questions");
-        } finally {
-          setLoading(false);
+          console.error("Error loading questions:", err);
+          setError("Failed to load questions. Please try again.");
         }
+      }
+    };
+
+    loadQuestions();
+  }, [mode, category]);
+
+  // Socket setup for multiplayer mode
+  useEffect(() => {
+    if (mode !== "two-player" || !gameCode) return;
+
+    const socket = getSocket();
+    if (!socket) {
+      setError("No socket connection available");
+      return;
+    }
+
+    let mounted = true;
+
+    // Join the game room
+    socket.emit("join room", { gameCode, user: { _id: socket.id } });
+
+    socket.on("game:error", (error) => {
+      if (!mounted) return;
+      console.error("Game error:", error);
+      setError(error.message || "An error occurred in the game");
+      if (error.message === "Game room is full") {
+        setTimeout(() => navigate("/tictactoe/setup"), 2000);
       }
     });
 
+    socket.on("game:joined", ({ symbol }) => {
+      if (!mounted) return;
+      setPlayerSymbol(symbol);
+      console.log("Joined as player:", symbol);
+    });
+
     socket.on("questions:received", ({ questions, board }) => {
-      console.log("Received questions and board:", { questions, board });
+      if (!mounted) return;
+      console.log("Received questions and board");
       if (Array.isArray(questions) && Array.isArray(board)) {
         setQuestions(questions);
         setBoard(board);
         setGameStarted(true);
         setLoading(false);
       } else {
-        console.error("Invalid questions or board format received");
         setError("Failed to load game data");
       }
     });
 
-    socket.on("cell_claimed", ({ index, symbol }) => {
-      setBoard((prevBoard) => {
+    socket.on("cell:claimed", ({ index, symbol }) => {
+      if (!mounted) return;
+      console.log("Cell claimed:", index, "by", symbol);
+      setBoard(prevBoard => {
         const newBoard = [...prevBoard];
         if (newBoard[index]) {
           newBoard[index] = {
@@ -159,42 +171,25 @@ const TicTacToe = () => {
     });
 
     socket.on("game:over", ({ winner }) => {
+      if (!mounted) return;
       setGameOver(true);
       setWinner(winner);
     });
 
-    socket.on("player:left", () => {
-      setError("Opponent left the game");
-      setGameOver(true);
-    });
-
-    socket.on("game:error", (error) => {
-      console.error("Game error:", error);
-      setError(error.message || "An error occurred");
-      setTimeout(() => navigate("/tictactoe/setup"), 2000);
-    });
-
     return () => {
-      socket.off("game:joined");
-      socket.off("game:start");
-      socket.off("questions:received");
-      socket.off("cell_claimed");
-      socket.off("game:over");
-      socket.off("player:left");
+      mounted = false;
       socket.off("game:error");
+      socket.off("game:joined");
+      socket.off("questions:received");
+      socket.off("cell:claimed");
+      socket.off("game:over");
+      socket.emit("leave room", { gameCode });
     };
-  }, [mode, gameCode, category, playerSymbol, navigate]);
+  }, [mode, gameCode, navigate]);
 
+  // Timer for single player mode
   useEffect(() => {
-    // Get current user ID
-    get("/api/whoami").then((user) => {
-      setUserId(user._id);
-    });
-  }, []);
-
-  useEffect(() => {
-    // Timer for single player mode
-    if (mode === "single" && !gameOver && timeLeft > 0) {
+    if (mode === "single" && gameStarted && !gameOver && timeLeft > 0) {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -206,97 +201,44 @@ const TicTacToe = () => {
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [mode, gameOver, timeLeft]);
-
-  useEffect(() => {
-    if (mode === "single" && !category) {
-      navigate("/category-select");
-    }
-  }, [mode, category, navigate]);
-
-  const updateStats = async (result) => {
-    if (userId && !userId.startsWith("guest_")) {
-      try {
-        await post("/api/stats/tictactoe", { result });
-      } catch (err) {
-        console.error("Failed to update stats:", err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (gameOver && !loading) {
-      if (mode === "single") {
-        if (timeLeft === 0) {
-          updateStats("loss");
-        } else {
-          console.log("reached the win updated stats");
-          updateStats("win");
-        }
-      } else if (mode === "two-player" && winner) {
-        if (winner === playerSymbol) {
-          updateStats("win");
-        } else if (winner === "tie" && gameOver) {
-          updateStats("tie");
-        } else {
-          updateStats("loss");
-        }
-      }
-    }
-  }, [gameOver, winner, mode, timeLeft, loading, playerSymbol]);
-
-  const checkAnswer = (question) => {
-    const currentQ = questions.find((q) => q.question === question);
-    if (!currentQ) return null;
-
-    const userAnswer = prompt(`Solve: ${question}`);
-    if (userAnswer === null) return null;
-
-    return String(currentQ.answer).toLowerCase() === String(userAnswer).toLowerCase();
-  };
+  }, [mode, gameStarted, gameOver, timeLeft]);
 
   const handleCellClick = async (index) => {
+    if (loading || gameOver || board[index].solved) return;
+
+    const cell = board[index];
+    const userAnswer = prompt(`Solve: ${cell.value}`);
+    if (!userAnswer) return;
+
     if (mode === "single") {
-      if (gameOver || board[index].solved) return;
+      const question = questionsState.find((q) => q.question === cell.value);
+      const isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase().trim();
 
-      const cell = board[index];
-      const isCorrect = checkAnswer(cell.value);
-
-      if (isCorrect !== null) {
+      if (isCorrect) {
         const newBoard = [...board];
-        if (isCorrect) {
-          newBoard[index] = {
-            ...cell,
-            solved: true,
-            player: "X",
-          };
-          setBoard(newBoard);
+        newBoard[index] = {
+          ...cell,
+          solved: true,
+          player: "X",
+        };
+        setBoard(newBoard);
 
-          if (checkWinner(newBoard)) {
-            setGameOver(true);
-            setWinner("X");
-          }
+        if (checkWinner(newBoard)) {
+          setGameOver(true);
+          setWinner("X");
         }
       }
-    } else {
-      // Multiplayer mode
-      if (!gameStarted || board[index].solved || !playerSymbol) return;
+    } else if (mode === "two-player") {
+      if (!gameStarted || !playerSymbol) return;
 
-      const cell = board[index];
-      const userAnswer = prompt(`Solve: ${cell.value}`);
-
-      if (userAnswer !== null) {
-        const socket = getSocket();
-        if (!socket) return;
-
-        socket.emit("game:move", {
-          gameCode,
-          cellIndex: index,
-          answer: userAnswer,
-          question: cell.value,
-          correctAnswer: questions.find((q) => q.question === cell.value).answer,
-        });
-      }
+      const socket = getSocket();
+      socket.emit("game:move", {
+        gameCode,
+        cellIndex: index,
+        answer: userAnswer,
+        question: cell.value,
+        correctAnswer: questionsState.find((q) => q.question === cell.value).answer,
+      });
     }
   };
 
@@ -352,8 +294,7 @@ const TicTacToe = () => {
     );
   }
 
-  // For two-player mode, wait for playerSymbol
-  if (mode === "two-player" && !playerSymbol) {
+  if (mode === "two-player" && !playerSymbol && !gameStarted) {
     return (
       <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
         <div className="loading">Waiting for game to start...</div>
@@ -363,15 +304,10 @@ const TicTacToe = () => {
 
   return (
     <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
-      <h1>tic-tac-toe</h1>
+      <h1>Tic Tac Toe</h1>
+      <div className="category">Category: {category}</div>
 
-      <div className="category">category: {category.replace(/([A-Z])/g, " $1").toLowerCase()}</div>
-
-      {mode === "two-player" && gameCode && (
-        <div className="waiting">
-          {<div className="player-info">You are Player {playerSymbol}</div>}
-        </div>
-      )}
+      {mode === "two-player" && <div className="player-info">You are Player {playerSymbol}</div>}
 
       {mode === "single" && <div className="timer">Time Left: {formatTime(timeLeft)}</div>}
 
@@ -396,39 +332,17 @@ const TicTacToe = () => {
         {board.map((cell, index) => (
           <div
             key={index}
-            className={`cell ${cell.solved ? "solved" : ""} ${cell.solved ? cell.player : ""}`}
+            className={`cell ${cell?.solved ? "solved" : ""} ${cell?.solved ? cell.player : ""}`}
             onClick={() => handleCellClick(index)}
           >
-            {cell.value}
+            {cell?.solved ? (
+              <span className={`symbol ${cell.player}`}>{cell.player}</span>
+            ) : (
+              <span className="question">{cell?.value || "?"}</span>
+            )}
           </div>
         ))}
       </div>
-
-      {currentQuestion && (
-        <div className="question-modal">
-          <div className="question-content">
-            <h3>Answer this question:</h3>
-            <p>{currentQuestion.question}</p>
-            <input
-              type="text"
-              placeholder="Your answer..."
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleAnswer(e.target.value);
-                  e.target.value = "";
-                }
-              }}
-              autoFocus
-            />
-          </div>
-        </div>
-      )}
-
-      {showResult && (
-        <div className={`result-message ${showResult.correct ? "correct" : "incorrect"}`}>
-          {showResult.message}
-        </div>
-      )}
     </div>
   );
 };

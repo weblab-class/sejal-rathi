@@ -10,6 +10,8 @@ const TicTacToeSetup = () => {
   const [joinCode, setJoinCode] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("easy");
   const [error, setError] = useState("");
+  const [mode, setMode] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const categories = [
     { value: "easy", label: "Easy" },
@@ -19,41 +21,51 @@ const TicTacToeSetup = () => {
     { value: "word", label: "Word Problems" },
   ];
 
+  const handleModeSelect = (selectedMode) => {
+    setMode(selectedMode);
+    if (selectedMode === "single-player") {
+      navigate("/tictactoe/category-select");
+    }
+  };
+
   const handleCreateRoom = async () => {
     try {
+      setLoading(true);
+      console.log("Creating room with category:", selectedCategory);
+      
       const response = await post("/api/gameroom/create", { category: selectedCategory });
-      console.log("Create room response:", response);
-
-      if (response && response.gameCode) {
-        navigate("/tictactoe/waiting", {
-          state: {
-            gameCode: response.gameCode,
-            category: selectedCategory,
-            isHost: true,
-          },
-        });
-      } else {
-        setError("Failed to create room - no game code received");
+      console.log("Room creation response:", response);
+      
+      if (!response.gameCode) {
+        throw new Error("No game code received from server");
       }
+
+      navigate(`/tictactoe/waiting/${response.gameCode}`, {
+        state: {
+          category: selectedCategory,
+          isHost: true
+        }
+      });
     } catch (err) {
       console.error("Error creating room:", err);
-      setError(err.response?.data?.error || "Could not create room");
+      setError(err.message || "Failed to create room");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleJoinRoom = async () => {
     if (joinCode.trim()) {
       try {
+        const formattedCode = joinCode.trim().toUpperCase();
         const response = await post("/api/gameroom/join", {
-          gameCode: joinCode.trim().toUpperCase(),
+          gameCode: formattedCode,
         });
 
         if (response.success) {
           setError("");
-          navigate("/tictactoe/waiting", {
+          navigate(`/tictactoe/waiting/${formattedCode}`, {
             state: {
-              gameCode: joinCode.trim().toUpperCase(),
-              category: selectedCategory,
               isHost: false,
             },
           });
@@ -73,6 +85,19 @@ const TicTacToeSetup = () => {
     <div className={`setup-container ${isDarkMode ? "dark" : "light"}`}>
       <h1>Game Setup</h1>
       <div className="setup-box">
+        <div className="category-selection">
+          <h2>Select Category</h2>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="category-select"
+          >
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+
         <div className="setup-options">
           <button className="setup-button" onClick={handleCreateRoom}>
             Create a Room
@@ -95,7 +120,7 @@ const TicTacToeSetup = () => {
             </button>
           </div>
 
-          <button className="setup-button" onClick={handleSinglePlayer}>
+          <button className="setup-button" onClick={() => handleModeSelect("single-player")}>
             Single Player
           </button>
         </div>

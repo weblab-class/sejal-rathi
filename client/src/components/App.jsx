@@ -80,10 +80,23 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Home userId={userId} handleLogin={handleLogin} />} />
             <Route path="/games" element={<GameSelect />} />
-            <Route path="/tictactoe/setup" element={<TicTacToeSetup />} />
-            <Route path="/tictactoe/waiting" element={<TicTacToeWaitingRoom />} />
-            <Route path="/tictactoe/game" element={<TicTacToe />} />
-            <Route path="/tictactoe/category-select" element={<CategorySelect />} />
+            {/* TicTacToe Routes */}
+            <Route
+              path="/tictactoe/setup"
+              element={<TicTacToeSetup />}
+            />
+            <Route
+              path="/tictactoe/category-select"
+              element={<CategorySelect />}
+            />
+            <Route
+              path="/tictactoe/waiting/:gameCode"
+              element={<TicTacToeWaitingRoom />}
+            />
+            <Route
+              path="/tictactoe/game/:gameCode"
+              element={<TicTacToe />}
+            />
             <Route path="/settings" element={<Settings userId={userId} />} />
             <Route path="/connections" element={<ConnectionsGame />} />
             {!userId?.startsWith("guest_") && <Route path="/profile" element={<Profile />} />}

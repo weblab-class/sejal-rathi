@@ -1,40 +1,92 @@
 const mongoose = require("mongoose");
 
 const GameRoomSchema = new mongoose.Schema({
-  code: {
+  gameCode: {
     type: String,
     required: true,
     unique: true,
+    index: true,
   },
-  players: [
-    {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-      name: String,
-      isHost: {
-        type: Boolean,
-        default: false,
-      },
-    },
-  ],
+  code: {
+    type: String,
+    sparse: true, // Allow null values and only index non-null values
+  },
   category: {
     type: String,
+    required: true,
     default: "easy",
   },
+  players: [{
+    userId: String,
+    name: String,
+    symbol: String,
+    isHost: Boolean,
+  }],
+  questions: [{
+    question: String,
+    answer: String,
+  }],
+  board: [{
+    value: String,
+    answer: String,
+    solved: {
+      type: Boolean,
+      default: false
+    },
+    player: String,
+  }],
+  gameStarted: {
+    type: Boolean,
+    default: false,
+  },
+  currentPlayer: {
+    type: String,
+    default: "X",
+  },
+  winner: String,
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 3600, // Document will be deleted after 1 hour
+    expires: 3600, // Room expires after 1 hour
   },
 });
 
-// Add index for room code lookups
-GameRoomSchema.index({ code: 1 });
+// Drop old indexes if they exist
+GameRoomSchema.pre('save', async function(next) {
+  if (this.isNew) {
+    try {
+      await mongoose.connection.db.collection('gamerooms').dropIndex('code_1');
+    } catch (err) {
+      // Ignore error if index doesn't exist
+      if (err.code !== 27) {
+        console.error("Error dropping old index:", err);
+      }
+    }
+  }
+  next();
+});
 
-// Add index for TTL (time to live)
+// Add new indexes
+GameRoomSchema.index({ gameCode: 1 }, { unique: true });
 GameRoomSchema.index({ createdAt: 1 }, { expireAfterSeconds: 3600 });
 
-module.exports = mongoose.model("GameRoom", GameRoomSchema);
+// Add static method to generate unique game code
+GameRoomSchema.statics.generateGameCode = async function() {
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  while (attempts < maxAttempts) {
+    const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const existingRoom = await this.findOne({ gameCode });
+    
+    if (!existingRoom) {
+      return gameCode;
+    }
+    
+    attempts++;
+  }
+  
+  throw new Error("Could not generate unique game code");
+};
+
+module.exports = mongoose.model("gameroom", GameRoomSchema);

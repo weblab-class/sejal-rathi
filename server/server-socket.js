@@ -1,15 +1,206 @@
 const GameRoom = require("./models/gameroom");
 const socketio = require("socket.io");
 
+const gameStates = {};
+
 let io;
+
+const init = (server, sessionMiddleware) => {
+  io = socketio(server, {
+    cors: {
+      origin: ["https://x-factor-puzzles.onrender.com", "http://localhost:5173"],
+      credentials: true,
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type"],
+    },
+  });
+
+  // Use session middleware
+  io.use((socket, next) => {
+    sessionMiddleware(socket.request, {}, next);
+  });
+
+  io.on("connection", (socket) => {
+    console.log(`Socket connected: ${socket.id}`);
+
+    socket.on("join room", ({ gameCode, user }) => {
+      try {
+        socket.join(gameCode);
+        socket.gameCode = gameCode;
+        console.log("Player joined room:", gameCode);
+        
+        const room = io.sockets.adapter.rooms.get(gameCode);
+        if (!room) {
+          throw new Error("Room not found");
+        }
+
+        if (room.size > 2) {
+          socket.emit("game:error", { message: "Game room is full" });
+          socket.leave(gameCode);
+          return;
+        }
+
+        const symbol = room.size === 1 ? "X" : "O";
+        socket.symbol = symbol;
+        socket.isHost = symbol === "X";
+        
+        socket.emit("game:joined", { symbol, isHost: socket.isHost });
+        io.to(gameCode).emit("player joined", {
+          players: Array.from(room).map(id => ({
+            socketId: id,
+            symbol: io.sockets.sockets.get(id).symbol,
+            isHost: io.sockets.sockets.get(id).isHost
+          }))
+        });
+
+        if (room.size === 2) {
+          console.log("Room is full, ready to start");
+        }
+      } catch (err) {
+        console.error("Error in join room:", err);
+        socket.emit("game:error", { message: err.message });
+      }
+    });
+
+    socket.on("start game", async ({ gameCode, category }) => {
+      try {
+        console.log("Start game request:", { gameCode, category });
+        
+        const room = io.sockets.adapter.rooms.get(gameCode);
+        if (!room || room.size !== 2) {
+          socket.emit("game:error", { message: "Need exactly 2 players to start" });
+          return;
+        }
+
+        if (!socket.isHost) {
+          socket.emit("game:error", { message: "Only host can start game" });
+          return;
+        }
+
+        // Get questions for the game
+        const questions = getQuestionsByCategory(category);
+        console.log("Generated questions for category:", category, questions);
+
+        // Create board with questions
+        const board = questions.map(q => ({
+          value: q.question,
+          answer: q.answer,
+          solved: false,
+          player: null
+        }));
+        console.log("Created board:", board);
+
+        // Save to game state
+        gameStates[gameCode] = {
+          questions,
+          board,
+          currentPlayer: "X",
+          started: true
+        };
+        console.log("Saved game state for room:", gameCode);
+
+        // First share questions with all players
+        io.to(gameCode).emit("questions:received", { questions, board });
+        console.log("Questions shared with room:", gameCode);
+
+        // Wait a bit to ensure questions are received
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Then start the game
+        io.to(gameCode).emit("game:start");
+        console.log("Game started in room:", gameCode);
+
+        // Finally start the countdown
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const startTime = Date.now();
+        io.to(gameCode).emit("countdown:start", { startTime });
+        console.log("Countdown started in room:", gameCode);
+
+      } catch (err) {
+        console.error("Error starting game:", err);
+        socket.emit("game:error", { message: err.message });
+      }
+    });
+
+    socket.on("questions:share", ({ gameCode, questions, board }) => {
+      try {
+        if (!socket.isHost) {
+          socket.emit("game:error", { message: "Only host can share questions" });
+          return;
+        }
+
+        // Save to game state
+        gameStates[gameCode] = {
+          questions,
+          board,
+          currentPlayer: "X",
+          started: true
+        };
+
+        // Share with other players
+        io.to(gameCode).emit("questions:received", { questions, board });
+        console.log("Questions shared in room:", gameCode);
+
+      } catch (err) {
+        console.error("Error sharing questions:", err);
+        socket.emit("game:error", { message: err.message });
+      }
+    });
+
+    socket.on("claim cell", ({ gameCode, index, answer }) => {
+      try {
+        const gameState = gameStates[gameCode];
+        if (!gameState) {
+          throw new Error("Game not found");
+        }
+
+        if (answer.toLowerCase() === gameState.board[index].answer.toLowerCase()) {
+          gameState.board[index].solved = true;
+          gameState.board[index].player = socket.symbol;
+          
+          io.to(gameCode).emit("cell:claimed", {
+            index,
+            symbol: socket.symbol,
+          });
+
+          // Check for winner
+          const winner = checkWinner(gameState.board);
+          if (winner) {
+            io.to(gameCode).emit("game:over", { winner });
+          }
+        }
+      } catch (err) {
+        console.error("Error claiming cell:", err);
+        socket.emit("game:error", { message: err.message });
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`Socket ${socket.id} disconnected`);
+    });
+
+    socket.on("error", (error) => {
+      console.error(`Socket ${socket.id} error:`, error);
+    });
+  });
+
+  io.on("error", (err) => {
+    console.log(`Socket server error: ${err}`);
+  });
+};
 
 const userToSocketMap = {}; // maps user ID to socket object
 const socketToUserMap = {}; // maps socket ID to user object
 const gameRooms = new Map(); // maps game code to room data
-const gameStates = new Map(); // maps game code to game state
 
 const getAllConnectedUsers = () => Object.values(socketToUserMap);
-const getSocketFromUserID = (userid) => userToSocketMap[userid];
+
+const getSocketFromUserID = (userId) => {
+  for (let client of Object.keys(socketToUserMap)) {
+    if (socketToUserMap[client]?._id === userId) return client;
+  }
+};
+
 const getUserFromSocketID = (socketid) => socketToUserMap[socketid];
 const getSocketFromSocketID = (socketid) => {
   if (io) {
@@ -71,313 +262,92 @@ const checkTie = (currentBoard) => {
   return currentBoard.every((cell) => cell && cell.solved);
 };
 
-const init = (server, sessionMiddleware) => {
-  io = socketio(server, {
-    cors: {
-      origin: ["https://x-factor-puzzles.onrender.com", "http://localhost:5173"],
-      credentials: true,
-      methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type"],
-    },
-  });
+const saveGameState = async (gameCode, state) => {
+  try {
+    console.log("Saving game state for room:", gameCode);
+    console.log("State to save:", state);
 
-  // Use session middleware
-  io.use((socket, next) => {
-    sessionMiddleware(socket.request, {}, next);
-  });
+    // Update the game room in the database
+    const gameRoom = await GameRoom.findOne({ gameCode });
+    if (!gameRoom) {
+      throw new Error("Game room not found");
+    }
 
-  io.on("connection", (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
+    // Update game state
+    gameRoom.questions = state.questions || gameRoom.questions;
+    gameRoom.board = state.board || gameRoom.board;
+    gameRoom.gameStarted = state.gameStarted || gameRoom.gameStarted;
+    gameRoom.currentPlayer = state.currentPlayer || gameRoom.currentPlayer;
+    gameRoom.winner = state.winner || gameRoom.winner;
 
-    // Debug listener for all events
-    socket.onAny((eventName, ...args) => {
-      console.log(`Socket ${socket.id} received event '${eventName}':`, args);
-    });
+    await gameRoom.save();
+    console.log("Game state saved successfully");
+  } catch (err) {
+    console.error("Error saving game state:", err);
+    throw err;
+  }
+};
 
-    socket.on("disconnect", () => {
-      const user = getUserFromSocketID(socket.id);
-      if (user) removeUser(user, socket);
-      console.log(`Socket ${socket.id} disconnected`);
-    });
+const getGameState = (gameCode) => {
+  if (!gameCode || !gameStates[gameCode]) {
+    return null;
+  }
+  return gameStates[gameCode];
+};
 
-    socket.on("error", (error) => {
-      console.error(`Socket ${socket.id} error:`, error);
-    });
+const QUESTIONS = {
+  easy: [
+    { question: "What is 2 + 2?", answer: "4" },
+    { question: "What is 5 - 3?", answer: "2" },
+    { question: "What is 3 x 4?", answer: "12" },
+    { question: "What is 10 ÷ 2?", answer: "5" },
+    { question: "What is 7 + 3?", answer: "10" },
+    { question: "What is 8 - 5?", answer: "3" },
+    { question: "What is 6 x 2?", answer: "12" },
+    { question: "What is 9 ÷ 3?", answer: "3" },
+    { question: "What is 4 + 6?", answer: "10" },
+  ],
+  medium: [
+    { question: "What is 12 x 8?", answer: "96" },
+    { question: "What is 45 ÷ 5?", answer: "9" },
+    { question: "What is 23 + 59?", answer: "82" },
+    { question: "What is 67 - 38?", answer: "29" },
+    { question: "What is 15 x 7?", answer: "105" },
+    { question: "What is 72 ÷ 8?", answer: "9" },
+    { question: "What is 44 + 67?", answer: "111" },
+    { question: "What is 89 - 45?", answer: "44" },
+    { question: "What is 13 x 6?", answer: "78" },
+  ],
+  hard: [
+    { question: "What is 156 + 289?", answer: "445" },
+    { question: "What is 423 - 167?", answer: "256" },
+    { question: "What is 25 x 18?", answer: "450" },
+    { question: "What is 144 ÷ 12?", answer: "12" },
+    { question: "What is 234 + 567?", answer: "801" },
+    { question: "What is 789 - 345?", answer: "444" },
+    { question: "What is 36 x 15?", answer: "540" },
+    { question: "What is 225 ÷ 15?", answer: "15" },
+    { question: "What is 678 + 234?", answer: "912" },
+  ],
+};
 
-    // Game room management
-    socket.on("join room", (gameCode) => {
-      try {
-        console.log(`Socket ${socket.id} joining room ${gameCode}`);
-        socket.join(gameCode);
-
-        // Debug room info after join
-        const room = io.sockets.adapter.rooms.get(gameCode);
-        console.log(`Room ${gameCode} size after join:`, room ? room.size : 0);
-
-        if (!gameRooms.has(gameCode)) {
-          gameRooms.set(gameCode, {
-            waitingPlayers: [],
-            inGamePlayers: [],
-            board: Array(9).fill(null),
-            started: false,
-          });
-        }
-        const gameRoom = gameRooms.get(gameCode);
-        const user = getUserFromSocketID(socket.id);
-
-        if (user && !gameRoom.inGamePlayers.includes(user._id)) {
-          gameRoom.inGamePlayers.push(user._id);
-          console.log(`Added user ${user._id} to room ${gameCode}`);
-        }
-
-        console.log(`Room ${gameCode} players:`, gameRoom.waitingPlayers);
-        io.to(gameCode).emit("player joined", { players: gameRoom.waitingPlayers });
-      } catch (err) {
-        console.error(`Error joining room:`, err);
-      }
-    });
-
-    socket.on("game_started", ({ gameCode, category }) => {
-      try {
-        console.log(`Game start requested for room ${gameCode} with category ${category}`);
-
-        // Debug room info
-        const room = io.sockets.adapter.rooms.get(gameCode);
-        console.log(`Room ${gameCode} exists:`, !!room);
-        if (room) {
-          console.log(`Room ${gameCode} size:`, room.size);
-          console.log(`Room ${gameCode} sockets:`, Array.from(room));
-        }
-
-        // Debug socket info
-        console.log(`Current socket rooms:`, Array.from(socket.rooms));
-
-        // We don't need to check gameRooms, just broadcast to the room
-        console.log(`Broadcasting game_started to room ${gameCode}`);
-        io.to(gameCode).emit("game_started", {
-          category: category,
-        });
-
-        // Verify the event was sent
-        console.log(`Broadcast complete to room ${gameCode}`);
-      } catch (err) {
-        console.error(`Error starting game:`, err);
-      }
-    });
-
-    socket.on("cell_claimed", ({ gameCode, index, symbol }) => {
-      try {
-        console.log(`Player claimed cell ${index} with symbol ${symbol} in game ${gameCode}`);
-        // Broadcast the move to all players in the room except the sender
-        socket.to(gameCode).emit("cell_claimed", { index, symbol });
-      } catch (err) {
-        console.error(`Error handling cell claim:`, err);
-      }
-    });
-
-    socket.on("game:move", (data) => {
-      const { gameCode, cellIndex, answer, question, correctAnswer } = data;
-      const room = gameRooms.get(gameCode);
-
-      if (!room) {
-        console.error(`Room ${gameCode} not found`);
-        return;
-      }
-
-      const player = room.inGamePlayers.find((p) => p.socket === socket.id);
-      if (!player) {
-        console.error(`Player ${socket.id} not found in room ${gameCode}`);
-        return;
-      }
-
-      // Check if the cell is already solved
-      if (room.board[cellIndex]?.solved) {
-        console.log(`Cell ${cellIndex} already solved in game ${gameCode}`);
-        return;
-      }
-
-      // Verify the answer
-      if (!question || !correctAnswer) {
-        console.error("Missing question or correct answer");
-        return;
-      }
-
-      const isCorrect = String(correctAnswer).toLowerCase() === String(answer).toLowerCase();
-      console.log(`Answer check for cell ${cellIndex}: ${isCorrect}`);
-
-      if (isCorrect) {
-        // Update the board
-        room.board[cellIndex] = {
-          ...room.board[cellIndex],
-          solved: true,
-          player: player.symbol,
-        };
-        gameRooms.set(gameCode, room);
-
-        // Notify all players about the move
-        io.to(gameCode).emit("cell_claimed", {
-          index: cellIndex,
-          symbol: player.symbol,
-        });
-
-        // Check for winner
-        const winner = checkWinner(room.board);
-        if (winner) {
-          io.to(gameCode).emit("game:over", { winner });
-          gameRooms.delete(gameCode);
-        } else {
-          // Check for tie
-          const tie = room.board.every((cell) => cell.solved);
-          if (tie) {
-            io.to(gameCode).emit("game:over", { winner: "tie" });
-            gameRooms.delete(gameCode);
-          }
-        }
-      }
-    });
-
-    socket.on("game:join", ({ gameCode, user }) => {
-      try {
-        console.log(`Player ${socket.id} attempting to join game ${gameCode}`);
-
-        // Get or create game room
-        let room = gameRooms.get(gameCode);
-
-        // Create new room if it doesn't exist
-        if (!room) {
-          console.log(`Creating new game room ${gameCode}`);
-          room = {
-            waitingPlayers: [], // List for players in the waiting room
-            inGamePlayers: [], // List for players in the game
-            board: Array(9).fill(null),
-            started: false,
-          };
-          gameRooms.set(gameCode, room);
-        }
-
-        console.log(room);
-        // Check room capacity
-        if (room.waitingPlayers.length >= 2) {
-          console.log(`Room ${gameCode} is full. Current players:`, room.waitingPlayers);
-          socket.emit("game:error", { message: "Game room is full" });
-          return;
-        }
-
-        // Add player to waiting room
-        const player = { socket: socket.id, user };
-        room.waitingPlayers.push(player);
-        console.log(`Added player to waiting room ${gameCode}:`, {
-          socket: player.socket,
-          totalPlayers: room.waitingPlayers.length,
-        });
-
-        // Join socket room and notify player
-
-        socket.join(gameCode);
-        socket.emit("game:joined", {
-          message: "Waiting for another player...",
-          symbol: room.waitingPlayers.length === 1 ? "X" : "O",
-        });
-
-        // Start game if room is full
-        if (room.waitingPlayers.length === 2 && !room.started) {
-          console.log(
-            `Starting game ${gameCode} with players:`,
-            room.waitingPlayers.map((p) => p.socket)
-          );
-          room.started = true;
-          // Move players to in-game list only when the game starts
-          console.log(room.waitingPlayers);
-          room.inGamePlayers = room.waitingPlayers.map((p, index) => ({
-            socket: p.socket,
-            symbol: index === 0 ? "X" : "O",
-          }));
-          room.waitingPlayers = []; // Clear waiting room
-          io.to(gameCode).emit("game:start", {
-            players: room.inGamePlayers,
-            board: room.board,
-          });
-        }
-      } catch (error) {
-        console.error("Error in game:join:", error);
-        socket.emit("game:error", { message: "Failed to join game" });
-      }
-    });
-
-    socket.on("leave room", (gameCode) => {
-      try {
-        const user = getUserFromSocketID(socket.id);
-        if (!user) return;
-
-        socket.leave(gameCode);
-        const room = gameRooms.get(gameCode);
-        if (room) {
-          room.players = room.players.filter((id) => id !== user._id);
-          if (room.players.length === 0) {
-            gameRooms.delete(gameCode);
-          } else {
-            io.to(gameCode).emit("player left", { players: room.players });
-          }
-        }
-      } catch (err) {
-        console.log(`Error leaving room: ${err}`);
-      }
-    });
-
-    socket.on("questions:share", ({ gameCode, questions, board }) => {
-      try {
-        if (!gameCode || !Array.isArray(questions) || !Array.isArray(board)) {
-          throw new Error("Invalid game data format");
-        }
-
-        console.log(`Sharing questions for game ${gameCode}`);
-        const room = gameRooms.get(gameCode);
-        if (!room) {
-          throw new Error("Game room not found");
-        }
-
-        // Store questions and board in the room
-        room.questions = questions;
-        room.board = board;
-        gameRooms.set(gameCode, room);
-
-        // Share questions with all players in the room
-        console.log(`Broadcasting questions to room ${gameCode}`);
-        io.to(gameCode).emit("questions:received", {
-          questions: questions,
-          board: board,
-        });
-
-        // Start the game if both players are ready
-        if (room.inGamePlayers.length === 2) {
-          console.log(`Starting game ${gameCode} with questions`);
-          io.to(gameCode).emit("game:ready", {
-            players: room.inGamePlayers,
-            questions: questions,
-            board: board,
-          });
-        }
-      } catch (error) {
-        console.error("Error sharing questions:", error);
-        socket.emit("game:error", {
-          message: error.message || "Failed to share questions",
-          details: error.stack,
-        });
-      }
-    });
-  });
-
-  io.on("error", (err) => {
-    console.log(`Socket server error: ${err}`);
-  });
+const getQuestionsByCategory = (category) => {
+  const questions = QUESTIONS[category] || QUESTIONS.easy;
+  // Shuffle questions and take 9
+  return [...questions]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 9);
 };
 
 module.exports = {
   init,
+  getIo: () => io,
   getSocketFromUserID,
   getUserFromSocketID,
   getSocketFromSocketID,
   addUser,
   removeUser,
   getAllConnectedUsers,
+  saveGameState,
+  getGameState,
 };
