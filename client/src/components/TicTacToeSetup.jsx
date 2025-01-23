@@ -66,12 +66,7 @@ const TicTacToeSetup = () => {
   };
 
   const handleSinglePlayer = () => {
-    navigate("/tictactoe/game", {
-      state: {
-        mode: "single",
-        category: selectedCategory,
-      },
-    });
+    navigate("/tictactoe/category-select");
   };
 
   return (

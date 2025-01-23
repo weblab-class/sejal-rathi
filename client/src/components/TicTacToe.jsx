@@ -36,28 +36,38 @@ const TicTacToe = () => {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
+        console.log("Fetching questions for category:", category);
+        setLoading(true);
         const fetchedQuestions = await get("/api/questions/" + category);
-        setQuestions(fetchedQuestions);
+        console.log("Fetched questions:", fetchedQuestions);
 
-        setBoard(
-          Array(9)
-            .fill()
-            .map((_, index) => ({
-              value: fetchedQuestions[index].question,
-              answer: fetchedQuestions[index].answer,
-              solved: false,
-              player: null,
-            }))
-        );
-        setLoading(false);
+        if (fetchedQuestions && fetchedQuestions.length > 0) {
+          setQuestions(fetchedQuestions);
+          setBoard(
+            Array(9)
+              .fill()
+              .map((_, index) => ({
+                value: fetchedQuestions[index].question,
+                answer: fetchedQuestions[index].answer,
+                solved: false,
+                player: null,
+              }))
+          );
+        } else {
+          setError("No questions received from the server");
+        }
       } catch (err) {
         console.error("Failed to fetch questions:", err);
         setError("Failed to load questions. Please try again.");
+      } finally {
         setLoading(false);
+        console.log("set loading to false");
       }
     };
 
-    fetchQuestions();
+    if (category) {
+      fetchQuestions();
+    }
   }, [category]);
 
   useEffect(() => {
@@ -145,6 +155,12 @@ const TicTacToe = () => {
       return () => clearInterval(timer);
     }
   }, [mode, gameOver, timeLeft]);
+
+  useEffect(() => {
+    if (mode === "single" && !category) {
+      navigate("/category-select");
+    }
+  }, [mode, category, navigate]);
 
   const updateStats = async (result) => {
     if (userId && !userId.startsWith("guest_")) {
@@ -265,7 +281,7 @@ const TicTacToe = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  if (loading || !playerSymbol) {
+  if (loading) {
     return (
       <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
         <div className="loading">Loading questions...</div>
@@ -280,6 +296,15 @@ const TicTacToe = () => {
         <button className="play-again" onClick={() => navigate("/tictactoe/setup")}>
           Try Again
         </button>
+      </div>
+    );
+  }
+
+  // For two-player mode, wait for playerSymbol
+  if (mode === "two-player" && !playerSymbol) {
+    return (
+      <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
+        <div className="loading">Waiting for game to start...</div>
       </div>
     );
   }
