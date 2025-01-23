@@ -16,6 +16,7 @@ const TicTacToeWaitingRoom = () => {
   const [showCountdown, setShowCountdown] = useState(false);
   const [category, setCategory] = useState(location.state?.category || "easy");
   const [gameQuestions, setGameQuestions] = useState(null);
+  const [playerSymbol, setPlayerSymbol] = useState(null);
 
   useEffect(() => {
     const socket = getSocket();
@@ -35,6 +36,12 @@ const TicTacToeWaitingRoom = () => {
       setTimeout(() => navigate("/tictactoe/setup"), 2000);
     });
 
+    socket.on("game:joined", ({ symbol }) => {
+      if (!mounted) return;
+      console.log("Joined as player:", symbol);
+      setPlayerSymbol(symbol);
+    });
+
     socket.on("player joined", (data) => {
       if (!mounted) return;
       console.log("Player joined:", data);
@@ -49,13 +56,17 @@ const TicTacToeWaitingRoom = () => {
 
     socket.on("game:start", () => {
       if (!mounted) return;
-      console.log("Game starting with questions:", gameQuestions);
+      console.log("Game starting with:", {
+        questions: gameQuestions,
+        symbol: playerSymbol
+      });
       setShowCountdown(true);
     });
 
     return () => {
       mounted = false;
       socket.off("game:error");
+      socket.off("game:joined");
       socket.off("player joined");
       socket.off("game:start");
       socket.off("questions:received");
@@ -86,12 +97,18 @@ const TicTacToeWaitingRoom = () => {
       gameCode={gameCode} 
       category={category}
       initialQuestions={gameQuestions}
+      playerSymbol={playerSymbol}
     />;
   }
 
   return (
     <div className="tictactoe-waiting">
       <h2>Game Code: {gameCode}</h2>
+      {playerSymbol && (
+        <div className="player-info">
+          You are Player {playerSymbol}
+        </div>
+      )}
       <div className="player-list">
         <h3>Players ({players.length}/2):</h3>
         {players.map((player, index) => (

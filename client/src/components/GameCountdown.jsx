@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getSocket } from "../client-socket";
 import "./GameCountdown.css";
 
-const GameCountdown = ({ gameCode, category, initialQuestions }) => {
+const GameCountdown = ({ gameCode, category, initialQuestions, playerSymbol }) => {
   const [count, setCount] = useState(3);
   const navigate = useNavigate();
   const questionsRef = useRef(initialQuestions);
@@ -19,7 +19,10 @@ const GameCountdown = ({ gameCode, category, initialQuestions }) => {
     const startCountdown = () => {
       if (!mounted || countdownStarted.current) return;
       
-      console.log("Starting countdown with questions:", questionsRef.current);
+      console.log("Starting countdown with:", {
+        questions: questionsRef.current,
+        symbol: playerSymbol
+      });
       countdownStarted.current = true;
 
       countdownInterval = setInterval(() => {
@@ -66,14 +69,14 @@ const GameCountdown = ({ gameCode, category, initialQuestions }) => {
       socket.off("countdown:start");
       socket.off("questions:received");
     };
-  }, [initialQuestions]);
+  }, [initialQuestions, playerSymbol]);
 
   useEffect(() => {
     if (count === 0 && questionsRef.current) {
       console.log("Navigating to game with:", {
-        count,
         questions: questionsRef.current.questions,
-        board: questionsRef.current.board
+        board: questionsRef.current.board,
+        symbol: playerSymbol
       });
       navigate(`/tictactoe/game/${gameCode}`, {
         state: {
@@ -81,12 +84,13 @@ const GameCountdown = ({ gameCode, category, initialQuestions }) => {
           gameCode,
           category,
           questions: questionsRef.current.questions,
-          board: questionsRef.current.board
+          board: questionsRef.current.board,
+          symbol: playerSymbol
         },
         replace: true
       });
     }
-  }, [count, navigate, gameCode, category]);
+  }, [count, navigate, gameCode, category, playerSymbol]);
 
   return (
     <div className="countdown-container">
@@ -95,6 +99,9 @@ const GameCountdown = ({ gameCode, category, initialQuestions }) => {
         <div className="countdown-text">
           {questionsRef.current ? "Game starting in..." : "Loading questions..."}
         </div>
+      </div>
+      <div className="player-info">
+        You are Player {playerSymbol}
       </div>
     </div>
   );

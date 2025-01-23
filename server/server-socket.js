@@ -28,7 +28,7 @@ const init = (server, sessionMiddleware) => {
         socket.join(gameCode);
         socket.gameCode = gameCode;
         console.log("Player joined room:", gameCode);
-        
+
         const room = io.sockets.adapter.rooms.get(gameCode);
         if (!room) {
           throw new Error("Room not found");
@@ -43,14 +43,14 @@ const init = (server, sessionMiddleware) => {
         const symbol = room.size === 1 ? "X" : "O";
         socket.symbol = symbol;
         socket.isHost = symbol === "X";
-        
+
         socket.emit("game:joined", { symbol, isHost: socket.isHost });
         io.to(gameCode).emit("player joined", {
-          players: Array.from(room).map(id => ({
+          players: Array.from(room).map((id) => ({
             socketId: id,
             symbol: io.sockets.sockets.get(id).symbol,
-            isHost: io.sockets.sockets.get(id).isHost
-          }))
+            isHost: io.sockets.sockets.get(id).isHost,
+          })),
         });
 
         if (room.size === 2) {
@@ -65,7 +65,7 @@ const init = (server, sessionMiddleware) => {
     socket.on("start game", async ({ gameCode, category }) => {
       try {
         console.log("Start game request:", { gameCode, category });
-        
+
         const room = io.sockets.adapter.rooms.get(gameCode);
         if (!room || room.size !== 2) {
           socket.emit("game:error", { message: "Need exactly 2 players to start" });
@@ -82,11 +82,11 @@ const init = (server, sessionMiddleware) => {
         console.log("Generated questions for category:", category, questions);
 
         // Create board with questions
-        const board = questions.map(q => ({
+        const board = questions.map((q) => ({
           value: q.question,
           answer: q.answer,
           solved: false,
-          player: null
+          player: null,
         }));
         console.log("Created board:", board);
 
@@ -95,7 +95,7 @@ const init = (server, sessionMiddleware) => {
           questions,
           board,
           currentPlayer: "X",
-          started: true
+          started: true,
         };
         console.log("Saved game state for room:", gameCode);
 
@@ -104,18 +104,17 @@ const init = (server, sessionMiddleware) => {
         console.log("Questions shared with room:", gameCode);
 
         // Wait a bit to ensure questions are received
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Then start the game
         io.to(gameCode).emit("game:start");
         console.log("Game started in room:", gameCode);
 
         // Finally start the countdown
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         const startTime = Date.now();
         io.to(gameCode).emit("countdown:start", { startTime });
         console.log("Countdown started in room:", gameCode);
-
       } catch (err) {
         console.error("Error starting game:", err);
         socket.emit("game:error", { message: err.message });
@@ -134,33 +133,43 @@ const init = (server, sessionMiddleware) => {
           questions,
           board,
           currentPlayer: "X",
-          started: true
+          started: true,
         };
 
         // Share with other players
         io.to(gameCode).emit("questions:received", { questions, board });
         console.log("Questions shared in room:", gameCode);
-
       } catch (err) {
         console.error("Error sharing questions:", err);
         socket.emit("game:error", { message: err.message });
       }
     });
 
-    socket.on("claim cell", ({ gameCode, index, answer }) => {
+    socket.on("claim cell", ({ gameCode, index, answer, symbol }) => {
       try {
         const gameState = gameStates[gameCode];
         if (!gameState) {
           throw new Error("Game not found");
         }
 
+        console.log("Cell claim attempt:", {
+          gameCode,
+          index,
+          answer,
+          playerSymbol: symbol,
+        });
+
         if (answer.toLowerCase() === gameState.board[index].answer.toLowerCase()) {
           gameState.board[index].solved = true;
-          gameState.board[index].player = socket.symbol;
-          
+          gameState.board[index].player = symbol;
+
           io.to(gameCode).emit("cell:claimed", {
             index,
-            symbol: socket.symbol,
+            symbol: symbol,
+          });
+          console.log("Cell claimed successfully:", {
+            index,
+            symbol: symbol,
           });
 
           // Check for winner
@@ -168,6 +177,8 @@ const init = (server, sessionMiddleware) => {
           if (winner) {
             io.to(gameCode).emit("game:over", { winner });
           }
+        } else {
+          console.log("Incorrect answer");
         }
       } catch (err) {
         console.error("Error claiming cell:", err);
@@ -334,9 +345,7 @@ const QUESTIONS = {
 const getQuestionsByCategory = (category) => {
   const questions = QUESTIONS[category] || QUESTIONS.easy;
   // Shuffle questions and take 9
-  return [...questions]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 9);
+  return [...questions].sort(() => Math.random() - 0.5).slice(0, 9);
 };
 
 module.exports = {

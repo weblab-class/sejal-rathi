@@ -1,40 +1,43 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { get, post } from "../utilities";
 import { getSocket } from "../client-socket";
 import { useTheme } from "./context/ThemeContext";
 import "./TicTacToe.css";
 
 const TicTacToe = () => {
-  const { gameCode } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { gameCode } = useParams();
+  
+  // Extract all state from location
+  const { mode, questions, board: initialBoard, symbol } = location.state || {};
+  
+  console.log("Game mounted with state:", location.state);
+
   const { isDarkMode } = useTheme();
 
-  const { questions, board: initialBoard } = location.state || {};
-
-  console.log("TicTacToe mounted with location state:", location.state);
-  
-  console.log("Extracted questions and board:", { questions, initialBoard });
-
   const [userId, setUserId] = useState(null);
-  const [mode, setMode] = useState(gameCode ? "two-player" : "single");
+  const [modeState, setMode] = useState(gameCode ? "two-player" : "single");
   const [category, setCategory] = useState(location.state?.category || "easy");
   const [timeLimit, setTimeLimit] = useState(5);
   const [questionsState, setQuestions] = useState(questions || []);
   const [board, setBoard] = useState(initialBoard || Array(9).fill(null));
-  const [playerSymbol, setPlayerSymbol] = useState(mode === "single" ? "X" : null);
-  const [gameStarted, setGameStarted] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [answer, setAnswer] = useState("");
+  const [error, setError] = useState("");
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [playerSymbol] = useState(symbol); // Don't allow symbol to change after mount
+  const [gameStarted, setGameStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(timeLimit * 60);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Load game state on mount
   useEffect(() => {
     const loadGameState = async () => {
-      if (mode === "two-player" && gameCode) {
+      if (modeState === "two-player" && gameCode) {
         try {
           console.log("Loading game state for room:", gameCode);
           console.log("Location state:", location.state);
@@ -75,12 +78,12 @@ const TicTacToe = () => {
     };
 
     loadGameState();
-  }, [mode, gameCode, navigate, location.state]);
+  }, [modeState, gameCode, navigate, location.state]);
 
   // Load questions for single player mode
   useEffect(() => {
     const loadQuestions = async () => {
-      if (mode === "single") {
+      if (modeState === "single") {
         try {
           console.log("Loading questions for single player");
           const fetchedQuestions = await get("/api/questions/" + category);
@@ -109,11 +112,11 @@ const TicTacToe = () => {
     };
 
     loadQuestions();
-  }, [mode, category]);
+  }, [modeState, category]);
 
   // Socket setup for multiplayer mode
   useEffect(() => {
-    if (mode !== "two-player" || !gameCode) return;
+    if (modeState !== "two-player" || !gameCode) return;
 
     const socket = getSocket();
     if (!socket) {
@@ -185,11 +188,11 @@ const TicTacToe = () => {
       socket.off("game:over");
       socket.emit("leave room", { gameCode });
     };
-  }, [mode, gameCode, navigate]);
+  }, [modeState, gameCode, navigate]);
 
   // Timer for single player mode
   useEffect(() => {
-    if (mode === "single" && gameStarted && !gameOver && timeLeft > 0) {
+    if (modeState === "single" && gameStarted && !gameOver && timeLeft > 0) {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -201,45 +204,35 @@ const TicTacToe = () => {
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [mode, gameStarted, gameOver, timeLeft]);
+  }, [modeState, gameStarted, gameOver, timeLeft]);
 
-  const handleCellClick = async (index) => {
-    if (loading || gameOver || board[index].solved) return;
+  const handleCellClick = (index) => {
+    if (!board[index] || board[index].solved || gameOver) return;
 
-    const cell = board[index];
-    const userAnswer = prompt(`Solve: ${cell.value}`);
+    console.log("Cell clicked:", {
+      index,
+      cellData: board[index],
+      playerSymbol
+    });
+
+    const userAnswer = prompt(`Answer this question: ${board[index].value}`);
     if (!userAnswer) return;
 
-    if (mode === "single") {
-      const question = questionsState.find((q) => q.question === cell.value);
-      const isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase().trim();
+    console.log("Submitting answer:", {
+      cell: index,
+      answer: userAnswer,
+      symbol: playerSymbol
+    });
 
-      if (isCorrect) {
-        const newBoard = [...board];
-        newBoard[index] = {
-          ...cell,
-          solved: true,
-          player: "X",
-        };
-        setBoard(newBoard);
+    const socket = getSocket();
+    if (!socket) return;
 
-        if (checkWinner(newBoard)) {
-          setGameOver(true);
-          setWinner("X");
-        }
-      }
-    } else if (mode === "two-player") {
-      if (!gameStarted || !playerSymbol) return;
-
-      const socket = getSocket();
-      socket.emit("game:move", {
-        gameCode,
-        cellIndex: index,
-        answer: userAnswer,
-        question: cell.value,
-        correctAnswer: questionsState.find((q) => q.question === cell.value).answer,
-      });
-    }
+    socket.emit("claim cell", {
+      gameCode,
+      index,
+      answer: userAnswer,
+      symbol: playerSymbol
+    });
   };
 
   const checkWinner = (currentBoard) => {
@@ -294,7 +287,7 @@ const TicTacToe = () => {
     );
   }
 
-  if (mode === "two-player" && !playerSymbol && !gameStarted) {
+  if (modeState === "two-player" && !playerSymbol && !gameStarted) {
     return (
       <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
         <div className="loading">Waiting for game to start...</div>
@@ -307,9 +300,9 @@ const TicTacToe = () => {
       <h1>Tic Tac Toe</h1>
       <div className="category">Category: {category}</div>
 
-      {mode === "two-player" && <div className="player-info">You are Player {playerSymbol}</div>}
+      {modeState === "two-player" && <div className="player-info">You are Player {playerSymbol}</div>}
 
-      {mode === "single" && <div className="timer">Time Left: {formatTime(timeLeft)}</div>}
+      {modeState === "single" && <div className="timer">Time Left: {formatTime(timeLeft)}</div>}
 
       <div className="game-status">
         {gameOver && (
@@ -343,6 +336,20 @@ const TicTacToe = () => {
           </div>
         ))}
       </div>
+
+      {gameOver && (
+        <div className="game-over">
+          <h2>Game Over!</h2>
+          {winner ? (
+            <p>Winner: Player {winner}</p>
+          ) : (
+            <p>It's a draw!</p>
+          )}
+          <button onClick={() => navigate("/tictactoe/setup")}>
+            Play Again
+          </button>
+        </div>
+      )}
     </div>
   );
 };
