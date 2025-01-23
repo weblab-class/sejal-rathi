@@ -1,9 +1,10 @@
 const GameRoom = require("./models/gameroom");
+const Question = require("./models/question");
 const socketio = require("socket.io");
 
 const gameStates = {};
 
-let io;
+let io = null;
 
 const init = (server, sessionMiddleware) => {
   io = socketio(server, {
@@ -77,18 +78,25 @@ const init = (server, sessionMiddleware) => {
           return;
         }
 
-        // Get questions for the game
-        const questions = getQuestionsByCategory(category);
-        console.log("Generated questions for category:", category, questions);
+        // Get random questions from MongoDB
+        const questions = await Question.aggregate([
+          { $match: { category: category } },
+          { $sample: { size: 9 } }
+        ]);
 
-        // Create board with questions
+        if (!questions || questions.length < 9) {
+          throw new Error("Not enough questions available");
+        }
+
+        console.log("Retrieved questions from database for category:", category);
+
+        // Create board with questions from database
         const board = questions.map((q) => ({
           value: q.question,
           answer: q.answer,
           solved: false,
           player: null,
         }));
-        console.log("Created board:", board);
 
         // Save to game state
         gameStates[gameCode] = {
@@ -97,7 +105,6 @@ const init = (server, sessionMiddleware) => {
           currentPlayer: "X",
           started: true,
         };
-        console.log("Saved game state for room:", gameCode);
 
         // First share questions with all players
         io.to(gameCode).emit("questions:received", { questions, board });
@@ -159,7 +166,11 @@ const init = (server, sessionMiddleware) => {
           playerSymbol: symbol,
         });
 
-        if (answer.toLowerCase() === gameState.board[index].answer.toLowerCase()) {
+        // Convert both answers to strings and lowercase for comparison
+        const correctAnswer = String(gameState.board[index].answer).toLowerCase();
+        const userAnswer = String(answer).toLowerCase();
+
+        if (correctAnswer === userAnswer) {
           gameState.board[index].solved = true;
           gameState.board[index].player = symbol;
 
@@ -304,48 +315,6 @@ const getGameState = (gameCode) => {
     return null;
   }
   return gameStates[gameCode];
-};
-
-const QUESTIONS = {
-  easy: [
-    { question: "What is 2 + 2?", answer: "4" },
-    { question: "What is 5 - 3?", answer: "2" },
-    { question: "What is 3 x 4?", answer: "12" },
-    { question: "What is 10 ÷ 2?", answer: "5" },
-    { question: "What is 7 + 3?", answer: "10" },
-    { question: "What is 8 - 5?", answer: "3" },
-    { question: "What is 6 x 2?", answer: "12" },
-    { question: "What is 9 ÷ 3?", answer: "3" },
-    { question: "What is 4 + 6?", answer: "10" },
-  ],
-  medium: [
-    { question: "What is 12 x 8?", answer: "96" },
-    { question: "What is 45 ÷ 5?", answer: "9" },
-    { question: "What is 23 + 59?", answer: "82" },
-    { question: "What is 67 - 38?", answer: "29" },
-    { question: "What is 15 x 7?", answer: "105" },
-    { question: "What is 72 ÷ 8?", answer: "9" },
-    { question: "What is 44 + 67?", answer: "111" },
-    { question: "What is 89 - 45?", answer: "44" },
-    { question: "What is 13 x 6?", answer: "78" },
-  ],
-  hard: [
-    { question: "What is 156 + 289?", answer: "445" },
-    { question: "What is 423 - 167?", answer: "256" },
-    { question: "What is 25 x 18?", answer: "450" },
-    { question: "What is 144 ÷ 12?", answer: "12" },
-    { question: "What is 234 + 567?", answer: "801" },
-    { question: "What is 789 - 345?", answer: "444" },
-    { question: "What is 36 x 15?", answer: "540" },
-    { question: "What is 225 ÷ 15?", answer: "15" },
-    { question: "What is 678 + 234?", answer: "912" },
-  ],
-};
-
-const getQuestionsByCategory = (category) => {
-  const questions = QUESTIONS[category] || QUESTIONS.easy;
-  // Shuffle questions and take 9
-  return [...questions].sort(() => Math.random() - 0.5).slice(0, 9);
 };
 
 module.exports = {

@@ -193,7 +193,7 @@ router.get("/categories/random", async (req, res) => {
 
     res.send({
       categories: selectedCategories,
-      levelCounts: levelCounts // Send the required count for each level
+      levelCounts: levelCounts, // Send the required count for each level
     });
   } catch (error) {
     console.error("Error getting random categories:", error);
@@ -327,7 +327,7 @@ router.post("/settings", auth.ensureLoggedIn, (req, res) => {
 // Game Room endpoints
 router.get("/gameroom/:gameCode", (req, res) => {
   const gameCode = req.params.gameCode;
-  
+
   GameRoom.findOne({ gameCode })
     .then((room) => {
       if (!room) {
@@ -367,21 +367,25 @@ router.post("/gameroom/create", auth.ensureLoggedIn, async (req, res) => {
     const newRoom = new GameRoom({
       gameCode: gameCode,
       category: req.body.category || "easy",
-      players: [{
-        userId: user._id,
-        name: user.name,
-        isHost: true,
-        symbol: "X"
-      }],
+      players: [
+        {
+          userId: user._id,
+          name: user.name,
+          isHost: true,
+          symbol: "X",
+        },
+      ],
       questions: [],
-      board: Array(9).fill().map(() => ({
-        value: "",
-        answer: "",
-        solved: false,
-        player: null
-      })),
+      board: Array(9)
+        .fill()
+        .map(() => ({
+          value: "",
+          answer: "",
+          solved: false,
+          player: null,
+        })),
       gameStarted: false,
-      currentPlayer: "X"
+      currentPlayer: "X",
     });
 
     console.log("New room object:", newRoom);
@@ -426,7 +430,7 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
       userId: user._id,
       name: user.name,
       isHost: false,
-      symbol: "O"
+      symbol: "O",
     });
 
     await room.save();

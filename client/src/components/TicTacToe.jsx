@@ -9,10 +9,10 @@ const TicTacToe = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { gameCode } = useParams();
-  
+
   // Extract all state from location
   const { mode, questions, board: initialBoard, symbol } = location.state || {};
-  
+
   console.log("Game mounted with state:", location.state);
 
   const { isDarkMode } = useTheme();
@@ -55,7 +55,7 @@ const TicTacToe = () => {
           // If no navigation state, fetch from server
           const state = await get(`/api/gameroom/${gameCode}`);
           console.log("Received game state from server:", state);
-          
+
           if (state && !state.error) {
             if (state.questions && state.board) {
               setQuestions(state.questions);
@@ -160,7 +160,7 @@ const TicTacToe = () => {
     socket.on("cell:claimed", ({ index, symbol }) => {
       if (!mounted) return;
       console.log("Cell claimed:", index, "by", symbol);
-      setBoard(prevBoard => {
+      setBoard((prevBoard) => {
         const newBoard = [...prevBoard];
         if (newBoard[index]) {
           newBoard[index] = {
@@ -212,7 +212,7 @@ const TicTacToe = () => {
     console.log("Cell clicked:", {
       index,
       cellData: board[index],
-      playerSymbol
+      playerSymbol,
     });
 
     const userAnswer = prompt(`Answer this question: ${board[index].value}`);
@@ -221,7 +221,7 @@ const TicTacToe = () => {
     console.log("Submitting answer:", {
       cell: index,
       answer: userAnswer,
-      symbol: playerSymbol
+      symbol: playerSymbol,
     });
 
     const socket = getSocket();
@@ -231,7 +231,7 @@ const TicTacToe = () => {
       gameCode,
       index,
       answer: userAnswer,
-      symbol: playerSymbol
+      symbol: playerSymbol,
     });
   };
 
@@ -300,7 +300,9 @@ const TicTacToe = () => {
       <h1>Tic Tac Toe</h1>
       <div className="category">Category: {category}</div>
 
-      {modeState === "two-player" && <div className="player-info">You are Player {playerSymbol}</div>}
+      {modeState === "two-player" && (
+        <div className="player-info">You are Player {playerSymbol}</div>
+      )}
 
       {modeState === "single" && <div className="timer">Time Left: {formatTime(timeLeft)}</div>}
 
@@ -340,14 +342,8 @@ const TicTacToe = () => {
       {gameOver && (
         <div className="game-over">
           <h2>Game Over!</h2>
-          {winner ? (
-            <p>Winner: Player {winner}</p>
-          ) : (
-            <p>It's a draw!</p>
-          )}
-          <button onClick={() => navigate("/tictactoe/setup")}>
-            Play Again
-          </button>
+          {winner ? <p>Winner: Player {winner}</p> : <p>It's a draw!</p>}
+          <button onClick={() => navigate("/tictactoe/setup")}>Play Again</button>
         </div>
       )}
     </div>
