@@ -34,6 +34,43 @@ const TicTacToe = () => {
   const { isDarkMode } = useTheme();
 
   useEffect(() => {
+    const loadSinglePlayerQuestions = async () => {
+      try {
+        console.log("Fetching questions for single player mode:", category);
+        setLoading(true);
+        const fetchedQuestions = await get("/api/questions/" + category);
+        console.log("Fetched questions:", fetchedQuestions);
+
+        if (fetchedQuestions && fetchedQuestions.length > 0) {
+          setQuestions(fetchedQuestions);
+          const newBoard = Array(9).fill().map((_, index) => ({
+            value: fetchedQuestions[index].question,
+            answer: fetchedQuestions[index].answer,
+            solved: false,
+            player: null,
+          }));
+          setBoard(newBoard);
+          setGameStarted(true);
+          setPlayerSymbol("X");  // Single player is always X
+          setLoading(false);
+        } else {
+          throw new Error("No questions received from server");
+        }
+      } catch (err) {
+        console.error("Error fetching questions:", err);
+        setError(err.message || "Failed to fetch questions");
+        setLoading(false);
+        setTimeout(() => navigate("/tictactoe/setup"), 2000);
+      }
+    };
+
+    // Only load questions for single player mode
+    if (mode === "single") {
+      loadSinglePlayerQuestions();
+    }
+  }, [category, mode, navigate]);
+
+  useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
