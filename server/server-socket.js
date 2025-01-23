@@ -74,14 +74,11 @@ const checkTie = (currentBoard) => {
 const init = (server, sessionMiddleware) => {
   io = socketio(server, {
     cors: {
-      origin: [
-        "https://x-factor-puzzles.onrender.com",
-        "http://localhost:5173"
-      ],
+      origin: ["https://x-factor-puzzles.onrender.com", "http://localhost:5173"],
       credentials: true,
       methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type"]
-    }
+      allowedHeaders: ["Content-Type"],
+    },
   });
 
   // Use session middleware
@@ -182,30 +179,40 @@ const init = (server, sessionMiddleware) => {
       const { gameCode, cellIndex, answer, question, correctAnswer } = data;
       const room = gameRooms.get(gameCode);
 
-      if (!room) return;
+      if (!room) {
+        console.error(`Room ${gameCode} not found`);
+        return;
+      }
 
       const player = room.inGamePlayers.find((p) => p.socket === socket.id);
-      if (!player) return;
+      if (!player) {
+        console.error(`Player ${socket.id} not found in room ${gameCode}`);
+        return;
+      }
 
       // Check if the cell is already solved
       if (room.board[cellIndex]?.solved) {
         console.log(`Cell ${cellIndex} already solved in game ${gameCode}`);
-        return; // Prevent the move if the cell is already solved
+        return;
       }
 
-      // Verify the answer (implement your answer checking logic here)
-      if (!question) return null;
-      if (!correctAnswer) return null;
+      // Verify the answer
+      if (!question || !correctAnswer) {
+        console.error("Missing question or correct answer");
+        return;
+      }
 
       const isCorrect = String(correctAnswer).toLowerCase() === String(answer).toLowerCase();
+      console.log(`Answer check for cell ${cellIndex}: ${isCorrect}`);
 
       if (isCorrect) {
-        // Mark the cell as solved and assign the player's symbol
+        // Update the board
         room.board[cellIndex] = {
           ...room.board[cellIndex],
           solved: true,
-          player: player.symbol, // Assign the player's symbol
+          player: player.symbol,
         };
+        gameRooms.set(gameCode, room);
 
         // Notify all players about the move
         io.to(gameCode).emit("cell_claimed", {
@@ -213,19 +220,18 @@ const init = (server, sessionMiddleware) => {
           symbol: player.symbol,
         });
 
-        console.log(room.board);
-
-        // Check for winner (implement your winning condition check)
+        // Check for winner
         const winner = checkWinner(room.board);
         if (winner) {
           io.to(gameCode).emit("game:over", { winner });
           gameRooms.delete(gameCode);
-        }
-
-        const tie = checkTie(room.board);
-        if (tie) {
-          io.to(gameCode).emit("game:over", { winner: "tie" });
-          gameRooms.delete(gameCode);
+        } else {
+          // Check for tie
+          const tie = room.board.every((cell) => cell.solved);
+          if (tie) {
+            io.to(gameCode).emit("game:over", { winner: "tie" });
+            gameRooms.delete(gameCode);
+          }
         }
       }
     });
@@ -315,6 +321,48 @@ const init = (server, sessionMiddleware) => {
         }
       } catch (err) {
         console.log(`Error leaving room: ${err}`);
+      }
+    });
+
+    socket.on("questions:share", ({ gameCode, questions, board }) => {
+      try {
+        if (!gameCode || !Array.isArray(questions) || !Array.isArray(board)) {
+          throw new Error("Invalid game data format");
+        }
+
+        console.log(`Sharing questions for game ${gameCode}`);
+        const room = gameRooms.get(gameCode);
+        if (!room) {
+          throw new Error("Game room not found");
+        }
+
+        // Store questions and board in the room
+        room.questions = questions;
+        room.board = board;
+        gameRooms.set(gameCode, room);
+
+        // Share questions with all players in the room
+        console.log(`Broadcasting questions to room ${gameCode}`);
+        io.to(gameCode).emit("questions:received", {
+          questions: questions,
+          board: board,
+        });
+
+        // Start the game if both players are ready
+        if (room.inGamePlayers.length === 2) {
+          console.log(`Starting game ${gameCode} with questions`);
+          io.to(gameCode).emit("game:ready", {
+            players: room.inGamePlayers,
+            questions: questions,
+            board: board,
+          });
+        }
+      } catch (error) {
+        console.error("Error sharing questions:", error);
+        socket.emit("game:error", {
+          message: error.message || "Failed to share questions",
+          details: error.stack,
+        });
       }
     });
   });

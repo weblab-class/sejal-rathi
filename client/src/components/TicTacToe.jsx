@@ -34,50 +34,6 @@ const TicTacToe = () => {
   const { isDarkMode } = useTheme();
 
   useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        console.log("Fetching questions for category:", category);
-        setLoading(true);
-        const fetchedQuestions = await get("/api/questions/" + category);
-        console.log("Fetched questions:", fetchedQuestions);
-
-        if (fetchedQuestions && fetchedQuestions.length > 0) {
-          setQuestions(fetchedQuestions);
-          setBoard(
-            Array(9)
-              .fill()
-              .map((_, index) => ({
-                value: fetchedQuestions[index].question,
-                answer: fetchedQuestions[index].answer,
-                solved: false,
-                player: null,
-              }))
-          );
-        } else {
-          setError("No questions received from the server");
-        }
-      } catch (err) {
-        console.error("Failed to fetch questions:", err);
-        setError("Failed to load questions. Please try again.");
-      } finally {
-        setLoading(false);
-        console.log("set loading to false");
-      }
-    };
-
-    if (category) {
-      fetchQuestions();
-    }
-  }, [category]);
-
-  useEffect(() => {
-    // Get current user ID
-    get("/api/whoami").then((user) => {
-      setUserId(user._id);
-    });
-  }, []);
-
-  useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
@@ -89,34 +45,78 @@ const TicTacToe = () => {
     // Socket event listeners
     socket.on("game:joined", ({ symbol }) => {
       setPlayerSymbol(symbol);
-      console.log(playerSymbol);
+      console.log("Joined as player:", symbol);
       if (symbol === "X") {
         setGameStarted(false); // Host waits for player 2
       }
     });
-  }, [mode, gameCode]);
 
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
-    socket.on("game:start", ({ players, board }) => {
-      setGameStarted(true);
+    socket.on("game:start", async ({ players }) => {
+      console.log("Game starting, players:", players);
       const opponentPlayer = players.find((p) => p.socket !== socket.id);
-      console.log(opponentPlayer);
       if (opponentPlayer) {
         setOpponent(opponentPlayer);
+      }
+
+      // If player X, fetch questions during countdown
+      if (playerSymbol === "X") {
+        try {
+          console.log("Fetching questions for category:", category);
+          setLoading(true);
+          const fetchedQuestions = await get("/api/questions/" + category);
+          console.log("Fetched questions:", fetchedQuestions);
+
+          if (fetchedQuestions && fetchedQuestions.length > 0) {
+            setQuestions(fetchedQuestions);
+            const newBoard = Array(9).fill().map((_, index) => ({
+              value: fetchedQuestions[index].question,
+              answer: fetchedQuestions[index].answer,
+              solved: false,
+              player: null,
+            }));
+            setBoard(newBoard);
+            
+            // Share questions with other player
+            socket.emit("questions:share", { 
+              gameCode, 
+              questions: fetchedQuestions,
+              board: newBoard
+            });
+          } else {
+            throw new Error("No questions received from server");
+          }
+        } catch (err) {
+          console.error("Error fetching questions:", err);
+          setError(err.message || "Failed to fetch questions");
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+
+    socket.on("questions:received", ({ questions, board }) => {
+      console.log("Received questions and board:", { questions, board });
+      if (Array.isArray(questions) && Array.isArray(board)) {
+        setQuestions(questions);
+        setBoard(board);
+        setGameStarted(true);
+        setLoading(false);
+      } else {
+        console.error("Invalid questions or board format received");
+        setError("Failed to load game data");
       }
     });
 
     socket.on("cell_claimed", ({ index, symbol }) => {
       setBoard((prevBoard) => {
         const newBoard = [...prevBoard];
-        newBoard[index] = {
-          ...newBoard[index],
-          solved: true,
-          player: symbol,
-        };
+        if (newBoard[index]) {
+          newBoard[index] = {
+            ...newBoard[index],
+            solved: true,
+            player: symbol,
+          };
+        }
         return newBoard;
       });
     });
@@ -131,14 +131,29 @@ const TicTacToe = () => {
       setGameOver(true);
     });
 
+    socket.on("game:error", (error) => {
+      console.error("Game error:", error);
+      setError(error.message || "An error occurred");
+      setTimeout(() => navigate("/tictactoe/setup"), 2000);
+    });
+
     return () => {
       socket.off("game:joined");
       socket.off("game:start");
+      socket.off("questions:received");
       socket.off("cell_claimed");
       socket.off("game:over");
       socket.off("player:left");
+      socket.off("game:error");
     };
-  }, [playerSymbol]);
+  }, [mode, gameCode, category, playerSymbol, navigate]);
+
+  useEffect(() => {
+    // Get current user ID
+    get("/api/whoami").then((user) => {
+      setUserId(user._id);
+    });
+  }, []);
 
   useEffect(() => {
     // Timer for single player mode
