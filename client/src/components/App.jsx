@@ -14,6 +14,7 @@ import Profile from "./Profile";
 import NotFound from "./pages/NotFound.jsx";
 import ConnectionsGame from "./ConnectionsGame";
 import CategorySelect from "./CategorySelect";
+import Nerdle from "./Nerdle";
 
 import { ThemeProvider } from "./context/ThemeContext";
 import { SoundProvider } from "./context/SoundContext";
@@ -80,6 +81,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Home userId={userId} handleLogin={handleLogin} />} />
             <Route path="/games" element={<GameSelect />} />
+            <Route path="/nerdle" element={<Nerdle />} />
             {/* TicTacToe Routes */}
             <Route
               path="/tictactoe/setup"

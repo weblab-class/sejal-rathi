@@ -1,0 +1,81 @@
+.GameSelect-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.GameSelect-container h1 {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+
+.GameSelect-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.GameSelect-option {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.GameSelect-option:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.GameSelect-option h2 {
+  color: #34495e;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.GameSelect-option p {
+  color: #7f8c8d;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.GameSelect-option button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.GameSelect-option button:hover {
+  background-color: #2980b9;
+}
+
+.GameSelect-option:nth-child(2) button {
+  background-color: #2ecc71;
+}
+
+.GameSelect-option:nth-child(2) button:hover {
+  background-color: #27ae60;
+}
+
+@media (max-width: 768px) {
+  .GameSelect-container {
+    padding: 1rem;
+  }
+
+  .GameSelect-options {
+    grid-template-columns: 1fr;
+  }
+
+  .GameSelect-option {
+    padding: 1.5rem;
+  }
+}

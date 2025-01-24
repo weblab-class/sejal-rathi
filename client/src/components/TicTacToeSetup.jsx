@@ -81,6 +81,10 @@ const TicTacToeSetup = () => {
     navigate("/tictactoe/category-select");
   };
 
+  const handleNerdle = () => {
+    navigate("/nerdle");
+  };
+
   return (
     <div className={`setup-container ${isDarkMode ? "dark" : "light"}`}>
       <h1>Game Setup</h1>
@@ -122,6 +126,10 @@ const TicTacToeSetup = () => {
 
           <button className="setup-button" onClick={() => handleModeSelect("single-player")}>
             Single Player
+          </button>
+
+          <button className="setup-button" onClick={handleNerdle}>
+            Nerdle
           </button>
         </div>
       </div>
