@@ -32,10 +32,10 @@ const TicTacToeSetup = () => {
     try {
       setLoading(true);
       console.log("Creating room with category:", selectedCategory);
-      
+
       const response = await post("/api/gameroom/create", { category: selectedCategory });
       console.log("Room creation response:", response);
-      
+
       if (!response.gameCode) {
         throw new Error("No game code received from server");
       }
@@ -43,8 +43,8 @@ const TicTacToeSetup = () => {
       navigate(`/tictactoe/waiting/${response.gameCode}`, {
         state: {
           category: selectedCategory,
-          isHost: true
-        }
+          isHost: true,
+        },
       });
     } catch (err) {
       console.error("Error creating room:", err);
@@ -55,25 +55,44 @@ const TicTacToeSetup = () => {
   };
 
   const handleJoinRoom = async () => {
-    if (joinCode.trim()) {
-      try {
-        const formattedCode = joinCode.trim().toUpperCase();
-        const response = await post("/api/gameroom/join", {
-          gameCode: formattedCode,
-        });
+    if (!joinCode.trim()) {
+      setError("Please enter a game code");
+      return;
+    }
 
-        if (response.success) {
-          setError("");
-          navigate(`/tictactoe/waiting/${formattedCode}`, {
-            state: {
-              isHost: false,
-            },
-          });
-        }
-      } catch (err) {
-        console.error("Error joining room:", err);
-        setError(err.response?.data?.error || "Could not join room");
+    try {
+      setLoading(true);
+      setError("");
+      const formattedCode = joinCode.trim().toUpperCase();
+
+      // First check if the room exists and if we can join
+      const response = await post("/api/gameroom/join", {
+        gameCode: formattedCode,
+      });
+
+      if (response.success) {
+        // If we're reconnecting, we might have a different category
+        const category = response.category || "easy";
+        
+        navigate(`/tictactoe/waiting/${formattedCode}`, {
+          state: {
+            isHost: false,
+            category,
+            reconnecting: response.reconnecting
+          },
+        });
       }
+    } catch (err) {
+      console.error("Error joining room:", err);
+      if (err.response?.status === 404) {
+        setError("Invalid room code. Please check and try again.");
+      } else if (err.response?.status === 400) {
+        setError("This room is full. Please try another room or create a new one.");
+      } else {
+        setError(err.response?.data?.error || "Could not join room. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,10 +145,6 @@ const TicTacToeSetup = () => {
 
           <button className="setup-button" onClick={() => handleModeSelect("single-player")}>
             Single Player
-          </button>
-
-          <button className="setup-button" onClick={handleNerdle}>
-            Nerdle
           </button>
         </div>
       </div>

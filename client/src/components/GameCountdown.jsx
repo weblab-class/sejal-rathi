@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { getSocket } from "../client-socket";
 import "./GameCountdown.css";
 
-const GameCountdown = ({ gameCode, category, initialQuestions, playerSymbol }) => {
+const GameCountdown = ({ gameCode, category, initialState, playerSymbol }) => {
   const [count, setCount] = useState(3);
   const navigate = useNavigate();
-  const questionsRef = useRef(initialQuestions);
+  const gameStateRef = useRef(initialState);
   const countdownStarted = useRef(false);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const GameCountdown = ({ gameCode, category, initialQuestions, playerSymbol }) =
       if (!mounted || countdownStarted.current) return;
       
       console.log("Starting countdown with:", {
-        questions: questionsRef.current,
+        gameState: gameStateRef.current,
         symbol: playerSymbol
       });
       countdownStarted.current = true;
@@ -37,28 +37,17 @@ const GameCountdown = ({ gameCode, category, initialQuestions, playerSymbol }) =
       }, 1000);
     };
 
-    // If we already have questions from props, we can start right away
-    if (initialQuestions && !countdownStarted.current) {
-      console.log("Using initial questions:", initialQuestions);
-      questionsRef.current = initialQuestions;
+    // If we already have game state from props, we can start right away
+    if (initialState && !countdownStarted.current) {
+      console.log("Using initial game state:", initialState);
+      gameStateRef.current = initialState;
       startCountdown();
     }
 
-    socket.on("questions:received", ({ questions, board }) => {
+    socket.on("game:update", ({ board, currentPlayer, winner }) => {
       if (!mounted) return;
-      console.log("Questions received in countdown:", { questions, board });
-      questionsRef.current = { questions, board };
-      if (!countdownStarted.current) {
-        startCountdown();
-      }
-    });
-
-    socket.on("countdown:start", () => {
-      if (!mounted || !questionsRef.current) {
-        console.log("Cannot start countdown - no questions yet");
-        return;
-      }
-      startCountdown();
+      console.log("Game state updated:", { board, currentPlayer, winner });
+      gameStateRef.current = { board, currentPlayer, winner };
     });
 
     return () => {
@@ -66,16 +55,14 @@ const GameCountdown = ({ gameCode, category, initialQuestions, playerSymbol }) =
       if (countdownInterval) {
         clearInterval(countdownInterval);
       }
-      socket.off("countdown:start");
-      socket.off("questions:received");
+      socket.off("game:update");
     };
-  }, [initialQuestions, playerSymbol]);
+  }, [initialState, playerSymbol]);
 
   useEffect(() => {
-    if (count === 0 && questionsRef.current) {
-      console.log("Navigating to game with:", {
-        questions: questionsRef.current.questions,
-        board: questionsRef.current.board,
+    if (count === 0 && gameStateRef.current) {
+      console.log("Navigating to game with state:", {
+        gameState: gameStateRef.current,
         symbol: playerSymbol
       });
       navigate(`/tictactoe/game/${gameCode}`, {
@@ -83,8 +70,7 @@ const GameCountdown = ({ gameCode, category, initialQuestions, playerSymbol }) =
           mode: "two-player",
           gameCode,
           category,
-          questions: questionsRef.current.questions,
-          board: questionsRef.current.board,
+          gameState: gameStateRef.current,
           symbol: playerSymbol
         },
         replace: true
@@ -97,11 +83,8 @@ const GameCountdown = ({ gameCode, category, initialQuestions, playerSymbol }) =
       <div className="countdown-overlay">
         <div className="countdown-number">{count}</div>
         <div className="countdown-text">
-          {questionsRef.current ? "Game starting in..." : "Loading questions..."}
+          {gameStateRef.current ? "Game starting in..." : "Loading game state..."}
         </div>
-      </div>
-      <div className="player-info">
-        You are Player {playerSymbol}
       </div>
     </div>
   );

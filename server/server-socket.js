@@ -24,35 +24,67 @@ const init = (server, sessionMiddleware) => {
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
-    socket.on("join room", ({ gameCode, user }) => {
+    socket.on("join room", async ({ gameCode, user }) => {
       try {
         socket.join(gameCode);
         socket.gameCode = gameCode;
-        console.log("Player joined room:", gameCode);
+        console.log("Player joined room:", gameCode, "User:", user);
+
+        // Check if game exists in database
+        let gameRoom = await GameRoom.findOne({ gameCode });
+        if (!gameRoom) {
+          throw new Error("Game room not found");
+        }
 
         const room = io.sockets.adapter.rooms.get(gameCode);
         if (!room) {
-          throw new Error("Room not found");
+          throw new Error("Socket room not found");
         }
 
-        if (room.size > 2) {
-          socket.emit("game:error", { message: "Game room is full" });
+        // Find existing player by database ID
+        const existingPlayer = gameRoom.players.find(p => 
+          p.userId.toString() === user._id.toString()
+        );
+
+        if (existingPlayer) {
+          // Player exists, update socket info
+          socket.symbol = existingPlayer.symbol;
+          socket.isHost = existingPlayer.isHost;
+          socket.userId = user._id;
+
+          // Send game state to reconnected player
+          socket.emit("game:joined", { 
+            symbol: socket.symbol, 
+            isHost: socket.isHost,
+            gameState: gameRoom.gameStarted ? {
+              board: gameRoom.board,
+              currentPlayer: gameRoom.currentPlayer,
+              winner: gameRoom.winner
+            } : null
+          });
+
+          // Notify other players about reconnection
+          socket.to(gameCode).emit("player:reconnected", {
+            userId: user._id,
+            symbol: socket.symbol
+          });
+
+          // Update room players
+          io.to(gameCode).emit("player joined", {
+            players: gameRoom.players.map(p => ({
+              socketId: p.userId,
+              name: p.name,
+              symbol: p.symbol,
+              isHost: p.isHost,
+              connected: true
+            }))
+          });
+        } else {
+          // If player doesn't exist in database, they need to join through the API first
+          socket.emit("game:error", { message: "Please join the game through the web interface first" });
           socket.leave(gameCode);
           return;
         }
-
-        const symbol = room.size === 1 ? "X" : "O";
-        socket.symbol = symbol;
-        socket.isHost = symbol === "X";
-
-        socket.emit("game:joined", { symbol, isHost: socket.isHost });
-        io.to(gameCode).emit("player joined", {
-          players: Array.from(room).map((id) => ({
-            socketId: id,
-            symbol: io.sockets.sockets.get(id).symbol,
-            isHost: io.sockets.sockets.get(id).isHost,
-          })),
-        });
 
         if (room.size === 2) {
           console.log("Room is full, ready to start");
@@ -98,98 +130,72 @@ const init = (server, sessionMiddleware) => {
           player: null,
         }));
 
-        // Save to game state
-        gameStates[gameCode] = {
-          questions,
+        // Update game state in database
+        const gameRoom = await GameRoom.findOne({ gameCode });
+        if (!gameRoom) {
+          throw new Error("Game room not found");
+        }
+
+        gameRoom.category = category;
+        gameRoom.questions = questions;
+        gameRoom.board = board;
+        gameRoom.gameStarted = true;
+        gameRoom.currentPlayer = "X";
+        await gameRoom.save();
+
+        console.log("Game state saved, emitting start event");
+
+        // Emit start game event with board
+        io.to(gameCode).emit("game:start", {
           board,
           currentPlayer: "X",
-          started: true,
-        };
+          category,
+        });
 
-        // First share questions with all players
-        io.to(gameCode).emit("questions:received", { questions, board });
-        console.log("Questions shared with room:", gameCode);
-
-        // Wait a bit to ensure questions are received
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Then start the game
-        io.to(gameCode).emit("game:start");
-        console.log("Game started in room:", gameCode);
-
-        // Finally start the countdown
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const startTime = Date.now();
-        io.to(gameCode).emit("countdown:start", { startTime });
-        console.log("Countdown started in room:", gameCode);
+        console.log("Game started successfully");
       } catch (err) {
         console.error("Error starting game:", err);
         socket.emit("game:error", { message: err.message });
       }
     });
 
-    socket.on("questions:share", ({ gameCode, questions, board }) => {
+    socket.on("claim cell", async ({ gameCode, index, answer, symbol }) => {
       try {
-        if (!socket.isHost) {
-          socket.emit("game:error", { message: "Only host can share questions" });
-          return;
-        }
-
-        // Save to game state
-        gameStates[gameCode] = {
-          questions,
-          board,
-          currentPlayer: "X",
-          started: true,
-        };
-
-        // Share with other players
-        io.to(gameCode).emit("questions:received", { questions, board });
-        console.log("Questions shared in room:", gameCode);
-      } catch (err) {
-        console.error("Error sharing questions:", err);
-        socket.emit("game:error", { message: err.message });
-      }
-    });
-
-    socket.on("claim cell", ({ gameCode, index, answer, symbol }) => {
-      try {
-        const gameState = gameStates[gameCode];
-        if (!gameState) {
+        const gameRoom = await GameRoom.findOne({ gameCode });
+        if (!gameRoom) {
           throw new Error("Game not found");
         }
 
-        console.log("Cell claim attempt:", {
-          gameCode,
-          index,
-          answer,
-          playerSymbol: symbol,
-        });
+        if (gameRoom.board[index].solved) {
+          throw new Error("Cell already claimed");
+        }
 
-        // Convert both answers to strings and lowercase for comparison
-        const correctAnswer = String(gameState.board[index].answer).toLowerCase();
-        const userAnswer = String(answer).toLowerCase();
+        // Verify answer
+        if (answer.toLowerCase() === gameRoom.board[index].answer.toLowerCase()) {
+          // Update the board
+          gameRoom.board[index].solved = true;
+          gameRoom.board[index].player = symbol;
+          await gameRoom.save();
 
-        if (correctAnswer === userAnswer) {
-          gameState.board[index].solved = true;
-          gameState.board[index].player = symbol;
-
+          // Emit to all players
           io.to(gameCode).emit("cell:claimed", {
             index,
-            symbol: symbol,
-          });
-          console.log("Cell claimed successfully:", {
-            index,
-            symbol: symbol,
+            symbol,
           });
 
           // Check for winner
-          const winner = checkWinner(gameState.board);
+          const winner = checkWinner(gameRoom.board);
           if (winner) {
+            gameRoom.winner = winner;
+            await gameRoom.save();
             io.to(gameCode).emit("game:over", { winner });
+          } else if (checkTie(gameRoom.board)) {
+            gameRoom.winner = "tie";
+            await gameRoom.save();
+            io.to(gameCode).emit("game:over", { winner: "tie" });
           }
         } else {
-          console.log("Incorrect answer");
+          socket.emit("game:error", { message: "Incorrect answer" });
         }
       } catch (err) {
         console.error("Error claiming cell:", err);
@@ -197,8 +203,52 @@ const init = (server, sessionMiddleware) => {
       }
     });
 
+    socket.on("make move", async ({ gameCode, position }) => {
+      try {
+        const gameRoom = await GameRoom.findOne({ gameCode });
+        if (!gameRoom) {
+          throw new Error("Game not found");
+        }
+
+        // Verify it's the player's turn
+        if (gameRoom.currentPlayer !== socket.symbol) {
+          throw new Error("Not your turn");
+        }
+
+        // Update the game state
+        const updatedBoard = [...gameRoom.board];
+        updatedBoard[position].player = socket.symbol;
+        
+        // Switch turns
+        const nextPlayer = socket.symbol === "X" ? "O" : "X";
+        
+        // Save to database
+        gameRoom.board = updatedBoard;
+        gameRoom.currentPlayer = nextPlayer;
+        await gameRoom.save();
+
+        // Emit the updated state to all players
+        io.to(gameCode).emit("game:update", {
+          board: updatedBoard,
+          currentPlayer: nextPlayer
+        });
+
+      } catch (err) {
+        console.error("Error making move:", err);
+        socket.emit("game:error", { message: err.message });
+      }
+    });
+
     socket.on("disconnect", () => {
-      console.log(`Socket ${socket.id} disconnected`);
+      console.log("Socket disconnected:", socket.id);
+      
+      if (socket.gameCode) {
+        // Notify other players about disconnection
+        socket.to(socket.gameCode).emit("player:disconnected", {
+          socketId: socket.id,
+          symbol: socket.symbol
+        });
+      }
     });
 
     socket.on("error", (error) => {

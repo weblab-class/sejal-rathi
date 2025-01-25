@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { get, post } from "../utilities";
-import { getSocket } from "../client-socket";
+import { initiateSocket } from "../client-socket";
 import { useTheme } from "./context/ThemeContext";
 import "./TicTacToe.css";
 
@@ -33,6 +33,7 @@ const TicTacToe = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(timeLimit * 60);
   const [loading, setLoading] = useState(true);
+  const [currentPlayer, setCurrentPlayer] = useState(null);
 
   // Load game state on mount
   useEffect(() => {
@@ -116,79 +117,96 @@ const TicTacToe = () => {
 
   // Socket setup for multiplayer mode
   useEffect(() => {
-    if (modeState !== "two-player" || !gameCode) return;
-
-    const socket = getSocket();
-    if (!socket) {
-      setError("No socket connection available");
-      return;
-    }
-
     let mounted = true;
+    let socketInstance = null;
 
-    // Join the game room
-    socket.emit("join room", { gameCode, user: { _id: socket.id } });
-
-    socket.on("game:error", (error) => {
-      if (!mounted) return;
-      console.error("Game error:", error);
-      setError(error.message || "An error occurred in the game");
-      if (error.message === "Game room is full") {
-        setTimeout(() => navigate("/tictactoe/setup"), 2000);
-      }
-    });
-
-    socket.on("game:joined", ({ symbol }) => {
-      if (!mounted) return;
-      setPlayerSymbol(symbol);
-      console.log("Joined as player:", symbol);
-    });
-
-    socket.on("questions:received", ({ questions, board }) => {
-      if (!mounted) return;
-      console.log("Received questions and board");
-      if (Array.isArray(questions) && Array.isArray(board)) {
-        setQuestions(questions);
-        setBoard(board);
-        setGameStarted(true);
-        setLoading(false);
-      } else {
-        setError("Failed to load game data");
-      }
-    });
-
-    socket.on("cell:claimed", ({ index, symbol }) => {
-      if (!mounted) return;
-      console.log("Cell claimed:", index, "by", symbol);
-      setBoard((prevBoard) => {
-        const newBoard = [...prevBoard];
-        if (newBoard[index]) {
-          newBoard[index] = {
-            ...newBoard[index],
-            solved: true,
-            player: symbol,
-          };
+    const initializeSocket = async () => {
+      try {
+        // Get user info first
+        const userInfo = await get("/api/whoami");
+        if (!userInfo || !userInfo._id) {
+          throw new Error("Not logged in");
         }
-        return newBoard;
-      });
-    });
 
-    socket.on("game:over", ({ winner }) => {
-      if (!mounted) return;
-      setGameOver(true);
-      setWinner(winner);
-    });
+        const socket = await initiateSocket();
+        if (!socket || !mounted) return;
+
+        socketInstance = socket;
+        console.log("Joining game room:", gameCode, "as user:", userInfo._id);
+        socket.emit("join room", { 
+          gameCode, 
+          user: { 
+            _id: userInfo._id,
+            name: userInfo.name 
+          } 
+        });
+
+        socket.on("game:error", (error) => {
+          if (!mounted) return;
+          console.error("Game error:", error);
+          setError(error.message || "An error occurred");
+        });
+
+        socket.on("game:joined", ({ symbol, gameState }) => {
+          if (!mounted) return;
+          if (gameState) {
+            setBoard(gameState.board);
+            setCurrentPlayer(gameState.currentPlayer);
+            setWinner(gameState.winner);
+          }
+        });
+
+        socket.on("game:update", ({ board, currentPlayer, winner }) => {
+          if (!mounted) return;
+          console.log("Game updated:", { board, currentPlayer, winner });
+          setBoard(board);
+          setCurrentPlayer(currentPlayer);
+          if (winner) setWinner(winner);
+        });
+
+        socket.on("cell:claimed", ({ index, symbol }) => {
+          if (!mounted) return;
+          console.log("Cell claimed:", index, "by", symbol);
+          setBoard((prevBoard) => {
+            const newBoard = [...prevBoard];
+            if (newBoard[index]) {
+              newBoard[index] = {
+                ...newBoard[index],
+                solved: true,
+                player: symbol,
+              };
+            }
+            return newBoard;
+          });
+        });
+
+        socket.on("game:over", ({ winner }) => {
+          if (!mounted) return;
+          setGameOver(true);
+          setWinner(winner);
+        });
+
+      } catch (err) {
+        if (mounted) {
+          console.error("Socket initialization error:", err);
+          setError("Failed to connect to game server");
+        }
+      }
+    };
+
+    initializeSocket();
 
     return () => {
       mounted = false;
-      socket.off("game:error");
-      socket.off("game:joined");
-      socket.off("questions:received");
-      socket.off("cell:claimed");
-      socket.off("game:over");
-      socket.emit("leave room", { gameCode });
+      if (socketInstance) {
+        socketInstance.off("game:error");
+        socketInstance.off("game:joined");
+        socketInstance.off("game:update");
+        socketInstance.off("cell:claimed");
+        socketInstance.off("game:over");
+      }
     };
-  }, [modeState, gameCode, navigate]);
+  }, [gameCode]);
 
   // Timer for single player mode
   useEffect(() => {
@@ -206,7 +224,7 @@ const TicTacToe = () => {
     }
   }, [modeState, gameStarted, gameOver, timeLeft]);
 
-  const handleCellClick = (index) => {
+  const handleCellClick = async (index) => {
     if (!board[index] || board[index].solved || gameOver) return;
 
     console.log("Cell clicked:", {
@@ -224,15 +242,23 @@ const TicTacToe = () => {
       symbol: playerSymbol,
     });
 
-    const socket = getSocket();
-    if (!socket) return;
+    try {
+      const socket = await initiateSocket();
+      if (!socket) {
+        setError("No connection to game server");
+        return;
+      }
 
-    socket.emit("claim cell", {
-      gameCode,
-      index,
-      answer: userAnswer,
-      symbol: playerSymbol,
-    });
+      socket.emit("claim cell", {
+        gameCode,
+        index,
+        answer: userAnswer,
+        symbol: playerSymbol,
+      });
+    } catch (err) {
+      console.error("Error submitting answer:", err);
+      setError("Failed to submit answer");
+    }
   };
 
   const checkWinner = (currentBoard) => {

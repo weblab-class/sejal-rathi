@@ -364,13 +364,14 @@ router.post("/gameroom/create", auth.ensureLoggedIn, async (req, res) => {
     const gameCode = await GameRoom.generateGameCode();
     console.log("Creating game room for user:", user._id, "with code:", gameCode);
 
+    // Create new room with host player
     const newRoom = new GameRoom({
       gameCode: gameCode,
       category: req.body.category || "easy",
       players: [
         {
           userId: user._id,
-          name: user.name,
+          name: user.name || "Player 1", // Ensure name is always set
           isHost: true,
           symbol: "X",
         },
@@ -391,7 +392,12 @@ router.post("/gameroom/create", auth.ensureLoggedIn, async (req, res) => {
     console.log("New room object:", newRoom);
     const savedRoom = await newRoom.save();
     console.log("Game room created:", savedRoom);
-    res.send({ gameCode: savedRoom.gameCode });
+    
+    res.send({ 
+      gameCode: savedRoom.gameCode,
+      category: savedRoom.category,
+      isHost: true
+    });
   } catch (err) {
     console.error("Error in /gameroom/create:", err);
     res.status(500).send({ error: err.message || "Could not create game room" });
@@ -415,27 +421,48 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
       return res.status(404).send({ error: "Invalid room code" });
     }
 
+    // Check if user is already in the room (using database ID)
+    const existingPlayer = room.players.find(
+      (p) => p.userId.toString() === user._id.toString()
+    );
+
+    if (existingPlayer) {
+      console.log("User reconnecting to room:", gameCode);
+      return res.send({
+        success: true,
+        reconnecting: true,
+        category: room.category,
+        symbol: existingPlayer.symbol,
+        isHost: existingPlayer.isHost,
+      });
+    }
+
+    // For new players, check if room is full
     if (room.players.length >= 2) {
+      console.log("Room is full:", gameCode);
+      console.log("Current players:", room.players);
       return res.status(400).send({ error: "Room is full" });
     }
 
-    // Check if user is already in the room
-    const existingPlayer = room.players.find((p) => p.userId.toString() === user._id.toString());
-    if (existingPlayer) {
-      return res.send({ success: true }); // Already in room
-    }
-
-    // Add player to room
-    room.players.push({
+    // Add new player (always as non-host since host is added in create)
+    const newPlayer = {
       userId: user._id,
-      name: user.name,
+      name: user.name || "Player 2", // Ensure name is always set
       isHost: false,
       symbol: "O",
-    });
+    };
 
+    room.players.push(newPlayer);
     await room.save();
-    console.log("User joined room successfully:", room);
-    res.send({ success: true });
+    
+    console.log("User joined room successfully. Current players:", room.players);
+    res.send({
+      success: true,
+      reconnecting: false,
+      category: room.category,
+      symbol: "O",
+      isHost: false,
+    });
   } catch (err) {
     console.error("Error in /gameroom/join:", err);
     res.status(500).send({ error: "Could not join game room" });
