@@ -87,6 +87,7 @@ body.dark .game-status {
   overflow-wrap: break-word;
   hyphens: auto;
   color: var(--dark-text);
+  position: relative;
 }
 
 body.dark .cell {
@@ -111,6 +112,40 @@ body.dark .cell {
 .cell.solved.O {
   background: #3498db;
   color: white;
+}
+
+.feedback-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  font-weight: bold;
+  animation: fadeInOut 1s ease-in-out;
+  z-index: 10;
+}
+
+.feedback-icon.correct {
+  color: #4CAF50;
+}
+
+.feedback-icon.incorrect {
+  color: #f44336;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 .loading {

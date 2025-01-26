@@ -42,8 +42,8 @@ const init = (server, sessionMiddleware) => {
         }
 
         // Find existing player by database ID
-        const existingPlayer = gameRoom.players.find(p => 
-          p.userId.toString() === user._id.toString()
+        const existingPlayer = gameRoom.players.find(
+          (p) => p.userId.toString() === user._id.toString()
         );
 
         if (existingPlayer) {
@@ -53,35 +53,39 @@ const init = (server, sessionMiddleware) => {
           socket.userId = user._id;
 
           // Send game state to reconnected player
-          socket.emit("game:joined", { 
-            symbol: socket.symbol, 
+          socket.emit("game:joined", {
+            symbol: socket.symbol,
             isHost: socket.isHost,
-            gameState: gameRoom.gameStarted ? {
-              board: gameRoom.board,
-              currentPlayer: gameRoom.currentPlayer,
-              winner: gameRoom.winner,
-              gameOver: !!gameRoom.winner // Add gameOver status based on winner
-            } : null
+            gameState: gameRoom.gameStarted
+              ? {
+                  board: gameRoom.board,
+                  currentPlayer: gameRoom.currentPlayer,
+                  winner: gameRoom.winner,
+                  gameOver: !!gameRoom.winner, // Add gameOver status based on winner
+                }
+              : null,
           });
 
           // Notify other players about reconnection
           socket.to(gameCode).emit("player:reconnected", {
             userId: user._id,
-            symbol: socket.symbol
+            symbol: socket.symbol,
           });
 
           // Update room players
           io.to(gameCode).emit("player joined", {
-            players: gameRoom.players.map(p => ({
+            players: gameRoom.players.map((p) => ({
               socketId: p.userId,
               name: p.name,
               symbol: p.symbol,
               isHost: p.isHost,
-              connected: true
-            }))
+              connected: true,
+            })),
           });
         } else {
-          socket.emit("game:error", { message: "Please join the game through the web interface first" });
+          socket.emit("game:error", {
+            message: "Please join the game through the web interface first",
+          });
           socket.leave(gameCode);
           return;
         }
@@ -109,7 +113,7 @@ const init = (server, sessionMiddleware) => {
         // Get random questions from MongoDB
         const questions = await Question.aggregate([
           { $match: { category: category } },
-          { $sample: { size: 9 } }
+          { $sample: { size: 9 } },
         ]);
 
         if (!questions || questions.length < 9) {
@@ -168,6 +172,9 @@ const init = (server, sessionMiddleware) => {
 
         // Verify answer
         if (answer.toLowerCase() === gameRoom.board[index].answer.toLowerCase()) {
+          // Send feedback only to the player who answered
+          socket.emit("answer:correct", { index });
+
           // Update the board
           gameRoom.board[index].solved = true;
           gameRoom.board[index].player = symbol;
@@ -176,15 +183,15 @@ const init = (server, sessionMiddleware) => {
           const winner = checkWinner(gameRoom.board);
           if (winner) {
             gameRoom.winner = winner;
-            gameRoom.gameOver = true; // Add gameOver flag
+            gameRoom.gameOver = true;
           } else if (checkTie(gameRoom.board)) {
             gameRoom.winner = "tie";
-            gameRoom.gameOver = true; // Add gameOver flag for tie
+            gameRoom.gameOver = true;
           }
 
           await gameRoom.save();
 
-          // Emit to all players
+          // Emit board update to all players
           io.to(gameCode).emit("cell:claimed", {
             index,
             symbol,
@@ -197,7 +204,8 @@ const init = (server, sessionMiddleware) => {
             });
           }
         } else {
-          socket.emit("game:error", { message: "Incorrect answer" });
+          // Only notify the player who made incorrect guess
+          socket.emit("answer:incorrect", { index });
         }
       } catch (err) {
         console.error("Error claiming cell:", err);
@@ -220,10 +228,10 @@ const init = (server, sessionMiddleware) => {
         // Update the game state
         const updatedBoard = [...gameRoom.board];
         updatedBoard[position].player = socket.symbol;
-        
+
         // Switch turns
         const nextPlayer = socket.symbol === "X" ? "O" : "X";
-        
+
         // Save to database
         gameRoom.board = updatedBoard;
         gameRoom.currentPlayer = nextPlayer;
@@ -232,9 +240,8 @@ const init = (server, sessionMiddleware) => {
         // Emit the updated state to all players
         io.to(gameCode).emit("game:update", {
           board: updatedBoard,
-          currentPlayer: nextPlayer
+          currentPlayer: nextPlayer,
         });
-
       } catch (err) {
         console.error("Error making move:", err);
         socket.emit("game:error", { message: err.message });
@@ -243,12 +250,12 @@ const init = (server, sessionMiddleware) => {
 
     socket.on("disconnect", () => {
       console.log("Socket disconnected:", socket.id);
-      
+
       if (socket.gameCode) {
         // Notify other players about disconnection
         socket.to(socket.gameCode).emit("player:disconnected", {
           socketId: socket.id,
-          symbol: socket.symbol
+          symbol: socket.symbol,
         });
       }
     });

@@ -34,6 +34,8 @@ const TicTacToe = () => {
   const [timeLeft, setTimeLeft] = useState(timeLimit * 60);
   const [loading, setLoading] = useState(true);
   const [currentPlayer, setCurrentPlayer] = useState(null);
+  const [feedback, setFeedback] = useState(null); // { correct: boolean, index: number }
+  const [lastClickedCell, setLastClickedCell] = useState(null);
 
   // Load game state on mount
   useEffect(() => {
@@ -141,10 +143,38 @@ const TicTacToe = () => {
           },
         });
 
+        socket.on("answer:correct", ({ index }) => {
+          if (!mounted) return;
+          setFeedback({ correct: true, index });
+          setTimeout(() => setFeedback(null), 1000);
+        });
+
+        socket.on("answer:incorrect", ({ index }) => {
+          if (!mounted) return;
+          setFeedback({ correct: false, index });
+          setTimeout(() => setFeedback(null), 1000);
+        });
+
         socket.on("game:error", (error) => {
           if (!mounted) return;
           console.error("Game error:", error);
           setError(error.message || "An error occurred");
+        });
+
+        socket.on("cell:claimed", ({ index, symbol }) => {
+          if (!mounted) return;
+          console.log("Cell claimed:", index, "by", symbol);
+          setBoard((prevBoard) => {
+            const newBoard = [...prevBoard];
+            if (newBoard[index]) {
+              newBoard[index] = {
+                ...newBoard[index],
+                solved: true,
+                player: symbol,
+              };
+            }
+            return newBoard;
+          });
         });
 
         socket.on("game:joined", ({ symbol, gameState }) => {
@@ -167,22 +197,6 @@ const TicTacToe = () => {
           if (winner) setWinner(winner);
         });
 
-        socket.on("cell:claimed", ({ index, symbol }) => {
-          if (!mounted) return;
-          console.log("Cell claimed:", index, "by", symbol);
-          setBoard((prevBoard) => {
-            const newBoard = [...prevBoard];
-            if (newBoard[index]) {
-              newBoard[index] = {
-                ...newBoard[index],
-                solved: true,
-                player: symbol,
-              };
-            }
-            return newBoard;
-          });
-        });
-
         socket.on("game:over", ({ winner, gameOver }) => {
           if (!mounted) return;
           setGameOver(gameOver);
@@ -201,6 +215,8 @@ const TicTacToe = () => {
     return () => {
       mounted = false;
       if (socketInstance) {
+        socketInstance.off("answer:correct");
+        socketInstance.off("answer:incorrect");
         socketInstance.off("game:error");
         socketInstance.off("game:joined");
         socketInstance.off("game:update");
@@ -229,12 +245,7 @@ const TicTacToe = () => {
   const handleCellClick = async (index) => {
     if (!board[index] || board[index].solved || gameOver) return;
 
-    console.log("Cell clicked:", {
-      index,
-      cellData: board[index],
-      playerSymbol,
-    });
-
+    setLastClickedCell(index);
     const userAnswer = prompt(`Answer this question: ${board[index].value}`);
     if (!userAnswer) return;
 
@@ -340,7 +351,9 @@ const TicTacToe = () => {
             {timeLeft === 0
               ? "Time's up! Game Over"
               : winner
-              ? `Player ${winner} wins!`
+              ? winner === "tie"
+                ? "It's a tie!"
+                : `Player ${winner} wins!`
               : "Game Over"}
             <div>
               <button className="play-again" onClick={() => navigate("/tictactoe/setup")}>
@@ -363,6 +376,11 @@ const TicTacToe = () => {
             ) : (
               <span className="question">{cell?.value || "?"}</span>
             )}
+            {feedback?.index === index && (
+              <div className={`feedback-icon ${feedback.correct ? "correct" : "incorrect"}`}>
+                {feedback.correct ? "✓" : "✗"}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -370,7 +388,6 @@ const TicTacToe = () => {
       {gameOver && (
         <div className="game-over">
           <h2>Game Over!</h2>
-          {winner ? <p>Winner: Player {winner}</p> : <p>It's a draw!</p>}
         </div>
       )}
     </div>

@@ -51,13 +51,13 @@ const TicTacToeWaitingRoom = () => {
           setTimeout(() => navigate("/tictactoe/setup"), 2000);
         });
 
-        socket.on("game:joined", ({ symbol, isHost, gameState: existingGameState }) => {
+        socket.on("game:joined", ({ symbol, isHost, gameState }) => {
           if (!mounted) return;
-          console.log("Joined as player:", symbol, "Game state:", existingGameState);
+          console.log("Joined as player:", symbol, "Game state:", gameState);
           setPlayerSymbol(symbol);
-          if (existingGameState) {
-            setGameState(existingGameState);
-            setShowCountdown(true);
+          if (gameState) {
+            // If game has already started, redirect to game
+            navigate(`/tictactoe/game/${gameCode}`);
           }
         });
 
@@ -115,6 +115,12 @@ const TicTacToeWaitingRoom = () => {
           });
         });
 
+        socket.on("questions:received", ({ questions, board }) => {
+          if (!mounted) return;
+          console.log("Questions received in waiting room:", { questions, board });
+          setGameQuestions({ questions, board });
+        });
+
       } catch (err) {
         if (mounted) {
           console.error("Socket initialization error:", err);
@@ -124,6 +130,19 @@ const TicTacToeWaitingRoom = () => {
       }
     };
 
+    // Also check game state directly from API
+    const checkGameState = async () => {
+      try {
+        const gameData = await get("/api/game", { gameCode });
+        if (gameData && gameData.gameStarted) {
+          navigate(`/tictactoe/game/${gameCode}`);
+        }
+      } catch (err) {
+        console.error("Error checking game state:", err);
+      }
+    };
+
+    checkGameState();
     initializeSocket();
 
     return () => {

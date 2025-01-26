@@ -469,6 +469,30 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
+// Get game state
+router.get("/game", (req, res) => {
+  const gameCode = req.query.gameCode;
+  if (!gameCode) {
+    return res.status(400).json({ error: "No game code provided" });
+  }
+
+  GameRoom.findOne({ gameCode })
+    .then((game) => {
+      if (!game) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+      res.send({
+        gameStarted: game.gameStarted,
+        winner: game.winner,
+        gameOver: game.gameOver
+      });
+    })
+    .catch((err) => {
+      console.error("Error getting game state:", err);
+      res.status(500).json({ error: "Failed to get game state" });
+    });
+});
+
 // Question API routes
 router.get("/question", (req, res) => {
   const { category } = req.query;
