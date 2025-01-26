@@ -59,7 +59,8 @@ const init = (server, sessionMiddleware) => {
             gameState: gameRoom.gameStarted ? {
               board: gameRoom.board,
               currentPlayer: gameRoom.currentPlayer,
-              winner: gameRoom.winner
+              winner: gameRoom.winner,
+              gameOver: !!gameRoom.winner // Add gameOver status based on winner
             } : null
           });
 
@@ -80,14 +81,9 @@ const init = (server, sessionMiddleware) => {
             }))
           });
         } else {
-          // If player doesn't exist in database, they need to join through the API first
           socket.emit("game:error", { message: "Please join the game through the web interface first" });
           socket.leave(gameCode);
           return;
-        }
-
-        if (room.size === 2) {
-          console.log("Room is full, ready to start");
         }
       } catch (err) {
         console.error("Error in join room:", err);
@@ -175,6 +171,17 @@ const init = (server, sessionMiddleware) => {
           // Update the board
           gameRoom.board[index].solved = true;
           gameRoom.board[index].player = symbol;
+
+          // Check for winner
+          const winner = checkWinner(gameRoom.board);
+          if (winner) {
+            gameRoom.winner = winner;
+            gameRoom.gameOver = true; // Add gameOver flag
+          } else if (checkTie(gameRoom.board)) {
+            gameRoom.winner = "tie";
+            gameRoom.gameOver = true; // Add gameOver flag for tie
+          }
+
           await gameRoom.save();
 
           // Emit to all players
@@ -183,16 +190,11 @@ const init = (server, sessionMiddleware) => {
             symbol,
           });
 
-          // Check for winner
-          const winner = checkWinner(gameRoom.board);
-          if (winner) {
-            gameRoom.winner = winner;
-            await gameRoom.save();
-            io.to(gameCode).emit("game:over", { winner });
-          } else if (checkTie(gameRoom.board)) {
-            gameRoom.winner = "tie";
-            await gameRoom.save();
-            io.to(gameCode).emit("game:over", { winner: "tie" });
+          if (gameRoom.gameOver) {
+            io.to(gameCode).emit("game:over", { 
+              winner: gameRoom.winner,
+              gameOver: true
+            });
           }
         } else {
           socket.emit("game:error", { message: "Incorrect answer" });
@@ -351,6 +353,7 @@ const saveGameState = async (gameCode, state) => {
     gameRoom.gameStarted = state.gameStarted || gameRoom.gameStarted;
     gameRoom.currentPlayer = state.currentPlayer || gameRoom.currentPlayer;
     gameRoom.winner = state.winner || gameRoom.winner;
+    gameRoom.gameOver = state.gameOver || gameRoom.gameOver;
 
     await gameRoom.save();
     console.log("Game state saved successfully");

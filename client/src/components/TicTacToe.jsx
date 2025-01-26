@@ -133,12 +133,12 @@ const TicTacToe = () => {
 
         socketInstance = socket;
         console.log("Joining game room:", gameCode, "as user:", userInfo._id);
-        socket.emit("join room", { 
-          gameCode, 
-          user: { 
+        socket.emit("join room", {
+          gameCode,
+          user: {
             _id: userInfo._id,
-            name: userInfo.name 
-          } 
+            name: userInfo.name,
+          },
         });
 
         socket.on("game:error", (error) => {
@@ -153,6 +153,9 @@ const TicTacToe = () => {
             setBoard(gameState.board);
             setCurrentPlayer(gameState.currentPlayer);
             setWinner(gameState.winner);
+            if (gameState.gameOver) {
+              setGameOver(true);
+            }
           }
         });
 
@@ -180,12 +183,11 @@ const TicTacToe = () => {
           });
         });
 
-        socket.on("game:over", ({ winner }) => {
+        socket.on("game:over", ({ winner, gameOver }) => {
           if (!mounted) return;
-          setGameOver(true);
+          setGameOver(gameOver);
           setWinner(winner);
         });
-
       } catch (err) {
         if (mounted) {
           console.error("Socket initialization error:", err);
@@ -369,7 +371,6 @@ const TicTacToe = () => {
         <div className="game-over">
           <h2>Game Over!</h2>
           {winner ? <p>Winner: Player {winner}</p> : <p>It's a draw!</p>}
-          <button onClick={() => navigate("/tictactoe/setup")}>Play Again</button>
         </div>
       )}
     </div>
