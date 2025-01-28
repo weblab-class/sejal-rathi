@@ -14,8 +14,8 @@ const Navbar = ({ userId, handleLogout }) => {
         </Link>
       </div>
       <div className="navbar-right">
-        <Link to="/settings" className="navbar-icon" title="Settings">
-          <i className="fas fa-cog"></i>
+        <Link to="/profile" className="navbar-icon" title="Profile">
+          <i className="fas fa-user"></i>
         </Link>
         <button className="navbar-icon logout-button" onClick={handleLogout} title="Logout">
           <i className="fas fa-sign-out-alt"></i>

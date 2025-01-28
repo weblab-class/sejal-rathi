@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ConnectionsGame.css";
+import { post } from "../utilities";
 
 const ConnectionsGame = () => {
   // State for managing the game
@@ -27,24 +28,29 @@ const ConnectionsGame = () => {
   // Function to update user statistics
   const updateStats = async (won, attempts) => {
     try {
-      await fetch("/api/stats/connections", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ won, attempts }),
+      await post("/api/stats/connections", {
+        won,
+        attempts,
       });
-    } catch (error) {
-      console.error("Error updating stats:", error);
+    } catch (err) {
+      console.error("Error updating stats:", err);
     }
   };
 
   // Function to handle game completion
-  const handleGameComplete = (won) => {
+  const handleGameComplete = async (won) => {
     setGameOver(true);
     setGameWon(won);
     setMessage("");
-    updateStats(won, 5 - attempts); // 5 is max attempts, so 5 - attempts = used attempts
+    
+    try {
+      await post("/api/stats/connections", {
+        won,
+        attempts: 5 - attempts, // 5 is max attempts, so 5 - attempts = used attempts
+      });
+    } catch (err) {
+      console.error("Failed to update stats:", err);
+    }
   };
 
   // Function to start a new game
@@ -503,6 +509,31 @@ const ConnectionsGame = () => {
 
   const navigate = useNavigate();
 
+  if (!gameStarted) {
+    return (
+      <div className="connections-setup">
+        <h1>Math-nections</h1>
+        <div className="setup-content">
+          <h2>Select Difficulty</h2>
+          <div className="difficulty-options">
+            {["easy", "medium", "hard"].map((level) => (
+              <button
+                key={level}
+                className={`difficulty-button ${difficulty === level ? "selected" : ""}`}
+                onClick={() => setDifficulty(level)}
+              >
+                {level.charAt(0).toUpperCase() + level.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button className="start-game-button" onClick={startGame}>
+            Start Game
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="connections-game">
       <button className="back-button" onClick={() => navigate("/games")}>
@@ -524,73 +555,31 @@ const ConnectionsGame = () => {
         {error && <div className="error-message">{error}</div>}
         {message && <div className="message">{message}</div>}
 
-        {!gameStarted ? (
-          <div className="game-start">
-            <div className="difficulty-selector">
-              <label>
-                <input
-                  type="radio"
-                  value="easy"
-                  checked={difficulty === "easy"}
-                  onChange={(e) => setDifficulty(e.target.value)}
-                />
-                Easy
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  value="medium"
-                  checked={difficulty === "medium"}
-                  onChange={(e) => setDifficulty(e.target.value)}
-                />
-                Medium
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  value="hard"
-                  checked={difficulty === "hard"}
-                  onChange={(e) => setDifficulty(e.target.value)}
-                />
-                Hard
-              </label>
-              <p className="difficulty-description">
-                {difficulty === "easy" && "2 categories from level 1, 2 from level 2"}
-                {difficulty === "medium" && "1 from level 1, 2 from level 2, 1 from level 3"}
-                {difficulty === "hard" && "1 category from each level (1-4)"}
-              </p>
-            </div>
-            <button onClick={startGame} className="start-button">
-              Start New Game
+        <div className="game-board">
+          {renderSolvedCategories()}
+          {renderRemainingNumbers()}
+
+          {selectedNumbers.length > 0 && !gameOver && (
+            <button
+              className="submit-button"
+              onClick={handleSubmit}
+              disabled={selectedNumbers.length !== 4}
+            >
+              Submit
             </button>
-          </div>
-        ) : (
-          <div className="game-board">
-            {renderSolvedCategories()}
-            {renderRemainingNumbers()}
+          )}
 
-            {selectedNumbers.length > 0 && !gameOver && (
-              <button
-                className="submit-button"
-                onClick={handleSubmit}
-                disabled={selectedNumbers.length !== 4}
-              >
-                Submit
-              </button>
-            )}
-
-            {!gameOver && (
-              <div className="attempts-counter">
-                <span className="attempts-label">Attempts remaining:</span>
-                {[...Array(4)].map((_, i) => (
-                  <span key={i} className={`attempt-dot ${i >= attempts ? "used" : ""}`}>
-                    ●
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          {!gameOver && (
+            <div className="attempts-counter">
+              <span className="attempts-label">Attempts remaining:</span>
+              {[...Array(4)].map((_, i) => (
+                <span key={i} className={`attempt-dot ${i >= attempts ? "used" : ""}`}>
+                  ●
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

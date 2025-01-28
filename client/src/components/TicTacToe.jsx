@@ -117,6 +117,23 @@ const TicTacToe = () => {
     loadQuestions();
   }, [modeState, category]);
 
+  // Update stats when game ends
+  useEffect(() => {
+    const updateStats = async () => {
+      if (gameOver && winner) {
+        try {
+          await post("/api/stats/tictactoe", {
+            won: winner === playerSymbol,
+          });
+        } catch (err) {
+          console.error("Failed to update stats:", err);
+        }
+      }
+    };
+
+    updateStats();
+  }, [gameOver, winner, playerSymbol]);
+
   // Socket setup for multiplayer mode
   useEffect(() => {
     let mounted = true;
@@ -197,10 +214,16 @@ const TicTacToe = () => {
           if (winner) setWinner(winner);
         });
 
-        socket.on("game:over", ({ winner, gameOver }) => {
+        socket.on("game:over", ({ gameOver, winner }) => {
           if (!mounted) return;
           setGameOver(gameOver);
           setWinner(winner);
+          // Update stats when game ends in multiplayer
+          if (gameOver && winner && winner !== "tie") {
+            post("/api/stats/tictactoe", {
+              won: winner === playerSymbol
+            }).catch(err => console.error("Failed to update stats:", err));
+          }
         });
       } catch (err) {
         if (mounted) {

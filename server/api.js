@@ -263,30 +263,84 @@ router.get("/stats", auth.ensureLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) {
-      console.error("User not found:", req.user._id);
       return res.status(404).send({ error: "User not found" });
     }
 
-    // Initialize stats if they don't exist
-    if (!user.stats || !user.stats.tictactoe) {
-      user.stats = {
-        tictactoe: {
-          gamesPlayed: 0,
-          gamesWon: 0,
-          gamesLost: 0,
-          gamesTied: 0,
-          winStreak: 0,
-          currentWinStreak: 0,
-        },
-      };
-      await user.save();
+    // Return stats object with game-specific stats
+    res.send({
+      tictactoe: user.tictactoeStats || { gamesPlayed: 0, gamesWon: 0 },
+      connections: user.connectionsStats || { gamesPlayed: 0, gamesWon: 0 },
+      nerdle: user.nerdleStats || { 
+        gamesPlayed: 0, 
+        gamesWon: 0, 
+        streak: 0, 
+        longestStreak: 0, 
+        averageGuesses: 0 
+      },
+    });
+  } catch (err) {
+    console.error("Error getting stats:", err);
+    res.status(500).send({ error: "Failed to get stats" });
+  }
+});
+
+// Update game stats
+router.post("/stats/:game", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const { game } = req.params;
+    const { won, attempts } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
     }
 
-    console.log("Retrieved stats for user:", user._id, "Stats:", user.stats);
-    res.send(user.stats);
+    // Get the correct stats field based on game type
+    let statsField;
+    switch (game) {
+      case "tictactoe":
+        statsField = "tictactoeStats";
+        break;
+      case "connections":
+        statsField = "connectionsStats";
+        break;
+      case "nerdle":
+        statsField = "nerdleStats";
+        break;
+      default:
+        return res.status(400).send({ error: "Invalid game type" });
+    }
+
+    // Initialize stats object if it doesn't exist
+    if (!user[statsField]) {
+      user[statsField] = { gamesPlayed: 0, gamesWon: 0 };
+    }
+
+    // Update basic stats
+    user[statsField].gamesPlayed += 1;
+    if (won) {
+      user[statsField].gamesWon += 1;
+      user[statsField].streak = (user[statsField].streak || 0) + 1;
+      user[statsField].longestStreak = Math.max(
+        user[statsField].streak || 0,
+        user[statsField].longestStreak || 0
+      );
+    } else {
+      user[statsField].streak = 0;
+    }
+
+    // Update game-specific stats
+    if (game === "connections" || game === "nerdle") {
+      const attemptsField = game === "nerdle" ? "averageGuesses" : "averageAttempts";
+      const totalAttempts = (user[statsField][attemptsField] || 0) * (user[statsField].gamesPlayed - 1) + attempts;
+      user[statsField][attemptsField] = totalAttempts / user[statsField].gamesPlayed;
+    }
+
+    await user.save();
+    res.send(user[statsField]);
   } catch (err) {
-    console.error("Failed to get stats:", err);
-    res.status(500).send({ error: "Failed to get stats" });
+    console.error("Error updating stats:", err);
+    res.status(500).send({ error: "Failed to update stats" });
   }
 });
 

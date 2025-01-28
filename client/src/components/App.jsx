@@ -9,7 +9,7 @@ import GameSelect from "./GameSelect";
 import TicTacToeSetup from "./TicTacToeSetup";
 import TicTacToeWaitingRoom from "./TicTacToeWaitingRoom";
 import TicTacToe from "./TicTacToe";
-import Settings from "./Settings";
+import Profile from "./Profile";
 import NotFound from "./pages/NotFound.jsx";
 import ConnectionsGame from "./ConnectionsGame";
 import CategorySelect from "./CategorySelect";
@@ -98,7 +98,7 @@ const App = () => {
               path="/tictactoe/game/:gameCode"
               element={<TicTacToe />}
             />
-            <Route path="/settings" element={<Settings userId={userId} />} />
+            <Route path="/profile" element={<Profile userId={userId} />} />
             <Route path="/connections" element={<ConnectionsGame />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
