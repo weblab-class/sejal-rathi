@@ -73,12 +73,12 @@ const TicTacToeSetup = () => {
       if (response.success) {
         // If we're reconnecting, we might have a different category
         const category = response.category || "easy";
-        
+
         navigate(`/tictactoe/waiting/${formattedCode}`, {
           state: {
             isHost: false,
             category,
-            reconnecting: response.reconnecting
+            reconnecting: response.reconnecting,
           },
         });
       }

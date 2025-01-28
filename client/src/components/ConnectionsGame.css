@@ -1,7 +1,14 @@
 .connections-game {
+  min-height: 100vh;
+  background-color: #1a1a2e;
+  padding: 20px;
+  position: relative;
+  width: 100%;
+}
+
+.game-content {
   max-width: 570px;
   margin: 0 auto;
-  padding: 10px;
   text-align: center;
 }
 
@@ -13,8 +20,11 @@
 .message {
   text-align: center;
   margin: 10px 0;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: var(--light-bg);
+  color: var(--dark-text);
   font-weight: bold;
-  color: #333;
 }
 
 .attempts {
@@ -35,8 +45,8 @@
   aspect-ratio: 1;
   border: none;
   border-radius: 8px;
-  background-color: #ffffff;
-  color: #333;
+  background-color: var(--light-bg);
+  color: var(--dark-text);
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -328,9 +338,35 @@
   }
 }
 
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 8px;
+  transition: transform 0.2s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  transform: scale(1.2);
+}
+
 :root {
   --level-1-color: #ffeeb3; /* yellow */
   --level-2-color: #bde5b7; /* green */
-  --level-3-color: #b3d5ff; /* blue */
-  --level-4-color: #e7c6df; /* purple */
+  --level-3-color: #b4d9f8; /* blue */
+  --level-4-color: #ffb3b3; /* red */
+  --dark-text: #333;
+  --light-bg: #edf2ff;
 }

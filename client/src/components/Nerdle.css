@@ -2,9 +2,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   padding: 1rem;
-  background-color: #f8faff;
+  background-color: #edf2ff;
+  position: relative;
+  width: 100%;
 }
 
 .board {
@@ -29,7 +31,7 @@
   font-size: 2rem;
   font-weight: bold;
   text-transform: uppercase;
-  background-color: #f8faff;
+  background-color: #edf2ff;
   transition: all 0.2s;
   color: #494747;
 }
@@ -123,9 +125,8 @@
   font-size: 1.5rem;
   font-weight: bold;
   color: #2c3e50;
-  text-align: center;
   margin: 0;
-  background-color: #f8faff;
+  background-color: #edf2ff;
   padding: 0px;
 }
 
@@ -133,16 +134,18 @@
   background-color: #6aaa64;
   color: white;
   border: none;
-  padding: 1rem 2rem;
-  border-radius: 4px;
-  font-size: 1.1rem;
+  padding: 0.8rem 1.8rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .play-again:hover {
-  background-color: #27ae60;
+  background-color: #549a4d;
+  transform: scale(1.02);
 }
 
 .instructions {
@@ -160,6 +163,32 @@
   background-color: #f0f0f0;
   color: #333;
   text-align: center;
+}
+
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.back-button {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 8px;
+  transition: transform 0.2s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  transform: scale(1.2);
+  color: #666;
+  background-color: #edf2ff;
 }
 
 @keyframes fadeIn {

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Nerdle.css";
 
 const WORD_LENGTH = 5;
 const ROWS = 6;
 
 const Nerdle = () => {
+  const navigate = useNavigate();
   const [board, setBoard] = useState(
     Array(ROWS)
       .fill()
@@ -153,15 +155,21 @@ const Nerdle = () => {
         setCurrentCol(currentCol - 1);
       }
     } else if (currentCol < WORD_LENGTH) {
-      const newBoard = [...board];
-      newBoard[currentRow][currentCol] = key;
-      setBoard(newBoard);
-      setCurrentCol(currentCol + 1);
+      // Only update if it's a number key
+      if (/^[0-9]$/.test(key)) {
+        const newBoard = [...board];
+        newBoard[currentRow][currentCol] = key;
+        setBoard(newBoard);
+        setCurrentCol(currentCol + 1);
+      }
     }
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Prevent default to avoid double input
+      e.preventDefault();
+
       if (e.key === "Enter") {
         handleKeyPress("ENTER");
       } else if (e.key === "Backspace") {
@@ -224,7 +232,7 @@ const Nerdle = () => {
     return (
       <div className="game-status">
         <p className="nerdle-status-message">
-          {gameWon ? "Congratulations!" : `Game Over! The correct answer was: ${solution}`}
+          {gameWon ? "Congratulations!" : `Game Over! The correct answer was ${solution}`}
         </p>
         <button className="play-again" onClick={initializeGame}>
           Play Again
@@ -235,6 +243,11 @@ const Nerdle = () => {
 
   return (
     <div className="nerdle-container">
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => navigate("/games")}>
+          ↩
+        </button>
+      </div>
       {renderBoard()}
       {renderGameStatus()}
       {renderKeyboard()}

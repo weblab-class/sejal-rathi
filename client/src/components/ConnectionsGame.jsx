@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ConnectionsGame.css";
 
 const ConnectionsGame = () => {
@@ -500,90 +501,97 @@ const ConnectionsGame = () => {
     return [...array].sort(() => Math.random() - 0.5);
   };
 
+  const navigate = useNavigate();
+
   return (
     <div className="connections-game">
-      <div className="game-header">
-        <h1>Mathnections</h1>
-        {gameOver && (
-          <div className="game-over">
-            <h2>{gameWon ? "Congratulations!" : "Game Over!"}</h2>
-            <button onClick={playAgain} className="play-again-button">
-              Play Again
-            </button>
-          </div>
-        )}
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-      {message && <div className="message">{message}</div>}
-
-      {!gameStarted ? (
-        <div className="game-start">
-          <div className="difficulty-selector">
-            <label>
-              <input
-                type="radio"
-                value="easy"
-                checked={difficulty === "easy"}
-                onChange={(e) => setDifficulty(e.target.value)}
-              />
-              Easy
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="medium"
-                checked={difficulty === "medium"}
-                onChange={(e) => setDifficulty(e.target.value)}
-              />
-              Medium
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="hard"
-                checked={difficulty === "hard"}
-                onChange={(e) => setDifficulty(e.target.value)}
-              />
-              Hard
-            </label>
-            <p className="difficulty-description">
-              {difficulty === "easy" && "2 categories from level 1, 2 from level 2"}
-              {difficulty === "medium" && "1 from level 1, 2 from level 2, 1 from level 3"}
-              {difficulty === "hard" && "1 category from each level (1-4)"}
-            </p>
-          </div>
-          <button onClick={startGame} className="start-button">
-            Start New Game
-          </button>
-        </div>
-      ) : (
-        <div className="game-board">
-          {renderSolvedCategories()}
-          {renderRemainingNumbers()}
-
-          {selectedNumbers.length > 0 && !gameOver && (
-            <button
-              className="submit-button"
-              onClick={handleSubmit}
-              disabled={selectedNumbers.length !== 4}
-            >
-              Submit
-            </button>
-          )}
-
-          {!gameOver && (
-            <div className="attempts-counter">
-              <span className="attempts-label">Attempts remaining:</span>
-              {[...Array(4)].map((_, i) => (
-                <span key={i} className={`attempt-dot ${i >= attempts ? "used" : ""}`}>
-                  ●
-                </span>
-              ))}
+      <button className="back-button" onClick={() => navigate("/games")}>
+        ↩
+      </button>
+      <div className="game-content">
+        <div className="game-header">
+          <h1>Mathnections</h1>
+          {gameOver && (
+            <div className="game-over">
+              <h2>{gameWon ? "Congratulations!" : "Game Over!"}</h2>
+              <button onClick={playAgain} className="play-again-button">
+                Play Again
+              </button>
             </div>
           )}
         </div>
-      )}
+
+        {error && <div className="error-message">{error}</div>}
+        {message && <div className="message">{message}</div>}
+
+        {!gameStarted ? (
+          <div className="game-start">
+            <div className="difficulty-selector">
+              <label>
+                <input
+                  type="radio"
+                  value="easy"
+                  checked={difficulty === "easy"}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                />
+                Easy
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="medium"
+                  checked={difficulty === "medium"}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                />
+                Medium
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="hard"
+                  checked={difficulty === "hard"}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                />
+                Hard
+              </label>
+              <p className="difficulty-description">
+                {difficulty === "easy" && "2 categories from level 1, 2 from level 2"}
+                {difficulty === "medium" && "1 from level 1, 2 from level 2, 1 from level 3"}
+                {difficulty === "hard" && "1 category from each level (1-4)"}
+              </p>
+            </div>
+            <button onClick={startGame} className="start-button">
+              Start New Game
+            </button>
+          </div>
+        ) : (
+          <div className="game-board">
+            {renderSolvedCategories()}
+            {renderRemainingNumbers()}
+
+            {selectedNumbers.length > 0 && !gameOver && (
+              <button
+                className="submit-button"
+                onClick={handleSubmit}
+                disabled={selectedNumbers.length !== 4}
+              >
+                Submit
+              </button>
+            )}
+
+            {!gameOver && (
+              <div className="attempts-counter">
+                <span className="attempts-label">Attempts remaining:</span>
+                {[...Array(4)].map((_, i) => (
+                  <span key={i} className={`attempt-dot ${i >= attempts ? "used" : ""}`}>
+                    ●
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
