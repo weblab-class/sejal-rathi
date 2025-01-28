@@ -11,16 +11,23 @@ const TicTacToe = () => {
   const { gameCode } = useParams();
 
   // Extract all state from location
-  const { mode, questions, board: initialBoard, symbol } = location.state || {};
+  const {
+    mode: initialMode,
+    questions,
+    board: initialBoard,
+    symbol,
+    category: initialCategory,
+    timeLimit,
+  } = location.state || {};
 
   console.log("Game mounted with state:", location.state);
 
   const { isDarkMode } = useTheme();
 
   const [userId, setUserId] = useState(null);
-  const [modeState, setMode] = useState(gameCode ? "two-player" : "single");
-  const [category, setCategory] = useState(location.state?.category || "easy");
-  const [timeLimit, setTimeLimit] = useState(5);
+  const [modeState, setMode] = useState(initialMode || (gameCode ? "two-player" : "single"));
+  const [category, setCategory] = useState(initialCategory || "easy");
+  const [timeLeft, setTimeLeft] = useState((timeLimit || 5) * 60);
   const [questionsState, setQuestions] = useState(questions || []);
   const [board, setBoard] = useState(initialBoard || Array(9).fill(null));
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -29,13 +36,46 @@ const TicTacToe = () => {
   const [error, setError] = useState("");
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
-  const [playerSymbol] = useState(symbol); // Don't allow symbol to change after mount
-  const [gameStarted, setGameStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(timeLimit * 60);
+  const [playerSymbol] = useState(symbol || "X"); // Single player is always X
+  const [gameStarted, setGameStarted] = useState(location.state?.gameStarted || false);
   const [loading, setLoading] = useState(true);
-  const [currentPlayer, setCurrentPlayer] = useState(null);
-  const [feedback, setFeedback] = useState(null); // { correct: boolean, index: number }
+  const [currentPlayer, setCurrentPlayer] = useState("X"); // Set initial player for single player
+  const [feedback, setFeedback] = useState(null);
   const [lastClickedCell, setLastClickedCell] = useState(null);
+
+  // Load questions for single player mode
+  useEffect(() => {
+    const loadQuestions = async () => {
+      if (modeState === "single") {
+        try {
+          console.log("Loading questions for single player, category:", category);
+          const fetchedQuestions = await get("/api/questions/" + category);
+
+          if (fetchedQuestions && fetchedQuestions.length > 0) {
+            setQuestions(fetchedQuestions);
+            const newBoard = Array(9)
+              .fill()
+              .map((_, index) => ({
+                value: fetchedQuestions[index].question,
+                answer: fetchedQuestions[index].answer,
+                solved: false,
+                player: null,
+              }));
+            setBoard(newBoard);
+            setGameStarted(true);
+            setLoading(false);
+          } else {
+            throw new Error("No questions available");
+          }
+        } catch (err) {
+          console.error("Error loading questions:", err);
+          setError("Failed to load questions. Please try again.");
+        }
+      }
+    };
+
+    loadQuestions();
+  }, [modeState, category]);
 
   // Load game state on mount
   useEffect(() => {
@@ -83,56 +123,106 @@ const TicTacToe = () => {
     loadGameState();
   }, [modeState, gameCode, navigate, location.state]);
 
-  // Load questions for single player mode
+  // Timer for single player mode
   useEffect(() => {
-    const loadQuestions = async () => {
-      if (modeState === "single") {
-        try {
-          console.log("Loading questions for single player");
-          const fetchedQuestions = await get("/api/questions/" + category);
-
-          if (fetchedQuestions && fetchedQuestions.length > 0) {
-            setQuestions(fetchedQuestions);
-            const newBoard = Array(9)
-              .fill()
-              .map((_, index) => ({
-                value: fetchedQuestions[index].question,
-                answer: fetchedQuestions[index].answer,
-                solved: false,
-                player: null,
-              }));
-            setBoard(newBoard);
-            setGameStarted(true);
-            setPlayerSymbol("X"); // Single player is always X
-          } else {
-            throw new Error("No questions available");
+    if (modeState === "single" && gameStarted && !gameOver && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setGameOver(true);
+            setWinner(null); // No winner if time runs out
+            // Update stats for loss due to timeout
+            post("/api/stats/tictactoe", { won: false }).catch((err) =>
+              console.error("Failed to update stats:", err)
+            );
+            return 0;
           }
-        } catch (err) {
-          console.error("Error loading questions:", err);
-          setError("Failed to load questions. Please try again.");
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [modeState, gameStarted, gameOver, timeLeft]);
+
+  // Handle cell click for both single and multiplayer modes
+  const handleCellClick = async (index) => {
+    if (!board[index] || board[index].solved || gameOver) return;
+
+    setSelectedCell(index);
+    setCurrentQuestion(board[index]);
+
+    if (modeState === "single") {
+      const userAnswer = prompt(`Answer this question: ${board[index].value}`);
+      if (!userAnswer) return;
+
+      // Check if answer is correct
+      console.log(board[index].answer);
+      if (userAnswer.trim().toLowerCase() === board[index].answer.toString()) {
+        // Update board
+        const newBoard = [...board];
+        newBoard[index] = {
+          ...newBoard[index],
+          solved: true,
+          player: "X",
+        };
+        setBoard(newBoard);
+        setFeedback({ correct: true, index });
+        // Clear feedback after 1 second
+        setTimeout(() => setFeedback(null), 1000);
+
+        // Check for winner (3 in a row)
+        const lines = [
+          [0, 1, 2], // Rows
+          [3, 4, 5],
+          [6, 7, 8],
+          [0, 3, 6], // Columns
+          [1, 4, 7],
+          [2, 5, 8],
+          [0, 4, 8], // Diagonals
+          [2, 4, 6],
+        ];
+
+        for (const [a, b, c] of lines) {
+          if (newBoard[a]?.solved && newBoard[b]?.solved && newBoard[c]?.solved) {
+            setGameOver(true);
+            setWinner("X");
+            // Update stats for win
+            try {
+              await post("/api/stats/tictactoe", { won: true });
+            } catch (err) {
+              console.error("Failed to update stats:", err);
+            }
+            return;
+          }
         }
+      } else {
+        setFeedback({ correct: false, index });
+        // Clear feedback after 1 second
+        setTimeout(() => setFeedback(null), 1000);
       }
-    };
+    } else if (modeState === "two-player" && gameCode) {
+      const userAnswer = prompt(`Answer this question: ${board[index].value}`);
+      if (!userAnswer) return;
 
-    loadQuestions();
-  }, [modeState, category]);
-
-  // Update stats when game ends
-  useEffect(() => {
-    const updateStats = async () => {
-      if (gameOver && winner) {
-        try {
-          await post("/api/stats/tictactoe", {
-            won: winner === playerSymbol,
-          });
-        } catch (err) {
-          console.error("Failed to update stats:", err);
+      try {
+        const socket = await initiateSocket();
+        if (!socket) {
+          setError("No connection to game server");
+          return;
         }
-      }
-    };
 
-    updateStats();
-  }, [gameOver, winner, playerSymbol]);
+        socket.emit("claim cell", {
+          gameCode,
+          index,
+          answer: userAnswer,
+          symbol: playerSymbol,
+        });
+      } catch (err) {
+        console.error("Error submitting answer:", err);
+        setError("Failed to submit answer");
+      }
+    }
+  };
 
   // Socket setup for multiplayer mode
   useEffect(() => {
@@ -140,6 +230,8 @@ const TicTacToe = () => {
     let socketInstance = null;
 
     const initializeSocket = async () => {
+      if (modeState !== "two-player" || !gameCode) return;
+
       try {
         // Get user info first
         const userInfo = await get("/api/whoami");
@@ -209,8 +301,8 @@ const TicTacToe = () => {
         socket.on("game:update", ({ board, currentPlayer, winner }) => {
           if (!mounted) return;
           console.log("Game updated:", { board, currentPlayer, winner });
-          setBoard(board);
-          setCurrentPlayer(currentPlayer);
+          if (board) setBoard(board);
+          if (currentPlayer) setCurrentPlayer(currentPlayer);
           if (winner) setWinner(winner);
         });
 
@@ -243,55 +335,7 @@ const TicTacToe = () => {
         socketInstance.off("game:over");
       }
     };
-  }, [gameCode]);
-
-  // Timer for single player mode
-  useEffect(() => {
-    if (modeState === "single" && gameStarted && !gameOver && timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            setGameOver(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [modeState, gameStarted, gameOver, timeLeft]);
-
-  const handleCellClick = async (index) => {
-    if (!board[index] || board[index].solved || gameOver) return;
-
-    setLastClickedCell(index);
-    const userAnswer = prompt(`Answer this question: ${board[index].value}`);
-    if (!userAnswer) return;
-
-    console.log("Submitting answer:", {
-      cell: index,
-      answer: userAnswer,
-      symbol: playerSymbol,
-    });
-
-    try {
-      const socket = await initiateSocket();
-      if (!socket) {
-        setError("No connection to game server");
-        return;
-      }
-
-      socket.emit("claim cell", {
-        gameCode,
-        index,
-        answer: userAnswer,
-        symbol: playerSymbol,
-      });
-    } catch (err) {
-      console.error("Error submitting answer:", err);
-      setError("Failed to submit answer");
-    }
-  };
+  }, [gameCode, modeState]);
 
   const checkWinner = (currentBoard) => {
     const winPatterns = [
@@ -368,7 +412,7 @@ const TicTacToe = () => {
         {gameOver && (
           <>
             {timeLeft === 0
-              ? "Time's up! Game Over"
+              ? "Time's up! Game Over :("
               : winner
               ? winner === "tie"
                 ? "It's a tie!"

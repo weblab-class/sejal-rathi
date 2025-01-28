@@ -98,6 +98,10 @@ const App = () => {
               path="/tictactoe/game/:gameCode"
               element={<TicTacToe />}
             />
+            <Route
+              path="/tictactoe/game"
+              element={<TicTacToe />}
+            />
             <Route path="/profile" element={<Profile userId={userId} />} />
             <Route path="/connections" element={<ConnectionsGame />} />
             <Route path="*" element={<NotFound />} />

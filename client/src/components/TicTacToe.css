@@ -31,7 +31,7 @@ body.dark .category {
 .timer {
   font-size: 1.5rem;
   margin: 1rem 0;
-  color: var(--light-text);
+  color: var(--dark-bg);
 }
 
 body.dark .timer {
@@ -39,9 +39,9 @@ body.dark .timer {
 }
 
 .game-status {
-  font-size: 1.2rem;
+  font-size: 1.7rem;
   margin: 1rem 0;
-  color: var(--light-text);
+  color: var(--dark-text);
 }
 
 body.dark .game-status {
