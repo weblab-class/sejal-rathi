@@ -14,9 +14,6 @@ const Navbar = ({ userId, handleLogout }) => {
         </Link>
       </div>
       <div className="navbar-right">
-        <Link to="/profile" className="navbar-icon" title="Profile">
-          <i className="fas fa-user"></i>
-        </Link>
         <Link to="/settings" className="navbar-icon" title="Settings">
           <i className="fas fa-cog"></i>
         </Link>

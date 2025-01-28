@@ -111,7 +111,7 @@ const Nerdle = () => {
     // Second pass: mark partial matches
     guessArray.forEach((digit, i) => {
       if (states[i]) return; // Skip if already marked
-      
+
       const solutionIndex = solutionArray.indexOf(digit);
       if (solutionIndex !== -1) {
         states[i] = "present";
@@ -181,10 +181,7 @@ const Nerdle = () => {
         {board.map((row, rowIndex) => (
           <div key={rowIndex} className="row">
             {row.map((digit, colIndex) => (
-              <div
-                key={colIndex}
-                className={`tile ${boardStates[rowIndex][colIndex]}`}
-              >
+              <div key={colIndex} className={`tile ${boardStates[rowIndex][colIndex]}`}>
                 {digit}
               </div>
             ))}
@@ -209,9 +206,7 @@ const Nerdle = () => {
             {row.map((key) => (
               <button
                 key={key}
-                className={`key ${getKeyState(key)} ${
-                  key.length > 1 ? "wide-key" : ""
-                }`}
+                className={`key ${getKeyState(key)} ${key.length > 1 ? "wide-key" : ""}`}
                 onClick={() => handleKeyPress(key)}
               >
                 {key === "BACKSPACE" ? "⌫" : key}
@@ -228,10 +223,8 @@ const Nerdle = () => {
 
     return (
       <div className="game-status">
-        <p className="status-message">
-          {gameWon
-            ? "Congratulations! You won!"
-            : `Game Over! The number was ${solution}`}
+        <p className="nerdle-status-message">
+          {gameWon ? "Congratulations!" : `Game Over! The correct answer was: ${solution}`}
         </p>
         <button className="play-again" onClick={initializeGame}>
           Play Again
