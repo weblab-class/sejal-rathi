@@ -42,6 +42,7 @@ const ConnectionsGame = () => {
   const handleGameComplete = (won) => {
     setGameOver(true);
     setGameWon(won);
+    setMessage("");
     updateStats(won, 5 - attempts); // 5 is max attempts, so 5 - attempts = used attempts
   };
 
@@ -198,34 +199,44 @@ const ConnectionsGame = () => {
 
   // Function to render solved categories
   const renderSolvedCategories = () => {
-    const solvedCats = categories.filter(cat => 
-      displayedNumbers.some(num => num.categoryId === cat._id && num.solved)
+    const solvedCats = categories.filter((cat) =>
+      displayedNumbers.some((num) => num.categoryId === cat._id && num.solved)
     );
 
-    return solvedCats.map(category => (
-      <div key={category._id} className={`category-row level-${category.level}`}>
-        <div className="category-title">{category.name}</div>
-        <div className="category-subtitle">{category.sampleNumbers.join(", ")}</div>
-      </div>
-    ));
+    return solvedCats.map((category) => {
+      // Get the actual numbers for this category that were in the game
+      const categoryNumbers = displayedNumbers
+        .filter((num) => num.categoryId === category._id)
+        .map((num) => num.value)
+        .sort((a, b) => a - b) // Sort numbers in ascending order
+        .join(", ");
+
+      return (
+        <div key={category._id} className={`category-row level-${category.level}`}>
+          <div className="category-title">{category.name}</div>
+          <div className="category-subtitle">{categoryNumbers}</div>
+        </div>
+      );
+    });
   };
 
   // Function to render remaining numbers
   const renderRemainingNumbers = () => {
     return (
       <div className="numbers-grid">
-        {displayedNumbers.map((number, index) => (
-          !number.solved && (
-            <button
-              key={`${number.value}-${index}`}
-              className={`number-cell ${number.selected ? "selected" : ""}`}
-              onClick={() => handleNumberClick(index)}
-              disabled={gameOver}
-            >
-              {number.value}
-            </button>
-          )
-        ))}
+        {displayedNumbers.map(
+          (number, index) =>
+            !number.solved && (
+              <button
+                key={`${number.value}-${index}`}
+                className={`number-cell ${number.selected ? "selected" : ""}`}
+                onClick={() => handleNumberClick(index)}
+                disabled={gameOver}
+              >
+                {number.value}
+              </button>
+            )
+        )}
       </div>
     );
   };
@@ -250,7 +261,7 @@ const ConnectionsGame = () => {
   // Handle number selection
   const handleNumberClick = (index) => {
     const clickedNumber = displayedNumbers[index];
-    
+
     if (!clickedNumber) {
       console.error("No number found at index:", index);
       return;
@@ -267,12 +278,12 @@ const ConnectionsGame = () => {
     }
 
     // Create new arrays to maintain state immutability
-    const newDisplayedNumbers = displayedNumbers.map((num, i) => 
+    const newDisplayedNumbers = displayedNumbers.map((num, i) =>
       i === index ? { ...num, selected: !num.selected } : num
     );
 
     const newSelectedNumbers = clickedNumber.selected
-      ? selectedNumbers.filter(num => num.value !== clickedNumber.value)
+      ? selectedNumbers.filter((num) => num.value !== clickedNumber.value)
       : [...selectedNumbers, clickedNumber];
 
     // Update state
@@ -323,8 +334,8 @@ const ConnectionsGame = () => {
       setSolvedCategories([...solvedCategories, categoryId]);
 
       // Update displayed numbers to show they're solved
-      const newDisplayedNumbers = displayedNumbers.map(num => {
-        if (selectedNumbers.some(selected => selected.value === num.value)) {
+      const newDisplayedNumbers = displayedNumbers.map((num) => {
+        if (selectedNumbers.some((selected) => selected.value === num.value)) {
           return { ...num, solved: true, selected: false };
         }
         return { ...num, selected: false };
@@ -335,12 +346,12 @@ const ConnectionsGame = () => {
         // First sort by solved status
         if (a.solved && !b.solved) return -1;
         if (!a.solved && b.solved) return 1;
-        
+
         // Then group by category
         if (a.solved && b.solved) {
           return a.categoryId.localeCompare(b.categoryId);
         }
-        
+
         return 0;
       });
 
@@ -350,7 +361,6 @@ const ConnectionsGame = () => {
 
       // Check if game is won
       if (solvedCategories.length + 1 === categories.length) {
-        setMessage("Congratulations! You won!");
         handleGameComplete(true);
       }
     } else {
@@ -375,10 +385,10 @@ const ConnectionsGame = () => {
 
       if (attempts <= 1) {
         // Game over, reveal all categories
-        const newDisplayedNumbers = displayedNumbers.map(num => ({
+        const newDisplayedNumbers = displayedNumbers.map((num) => ({
           ...num,
           selected: false,
-          revealed: !num.solved
+          revealed: !num.solved,
         }));
 
         // Sort numbers by category
@@ -386,25 +396,27 @@ const ConnectionsGame = () => {
           // First sort by solved status
           if (a.solved && !b.solved) return -1;
           if (!a.solved && b.solved) return 1;
-          
+
           // Then group by category
           return a.categoryId.localeCompare(b.categoryId);
         });
 
         setDisplayedNumbers(sortedNumbers);
-        setMessage("Game Over! Here are the correct categories:");
+        setMessage("");
         handleGameComplete(false);
       } else {
         // Clear selections and update message
-        const newDisplayedNumbers = displayedNumbers.map(num => ({
+        const newDisplayedNumbers = displayedNumbers.map((num) => ({
           ...num,
-          selected: false
+          selected: false,
         }));
         setDisplayedNumbers(newDisplayedNumbers);
         setSelectedNumbers([]);
-        
+
         if (almostCategory) {
-          setMessage(`So close! You are one away from a category. ${attempts - 1} attempts remaining.`);
+          setMessage(
+            `So close! You are one away from a category. ${attempts - 1} attempts remaining.`
+          );
         } else {
           setMessage(`Incorrect! ${attempts - 1} attempts remaining.`);
         }
@@ -490,7 +502,18 @@ const ConnectionsGame = () => {
 
   return (
     <div className="connections-game">
-      <h1>Mathnections</h1>
+      <div className="game-header">
+        <h1>Mathnections</h1>
+        {gameOver && (
+          <div className="game-over">
+            <h2>{gameWon ? "Congratulations!" : "Game Over!"}</h2>
+            <button onClick={playAgain} className="play-again-button">
+              Play Again
+            </button>
+          </div>
+        )}
+      </div>
+
       {error && <div className="error-message">{error}</div>}
       {message && <div className="message">{message}</div>}
 
@@ -539,27 +562,26 @@ const ConnectionsGame = () => {
           {renderSolvedCategories()}
           {renderRemainingNumbers()}
 
-          {selectedNumbers.length > 0 && (
+          {selectedNumbers.length > 0 && !gameOver && (
             <button
               className="submit-button"
               onClick={handleSubmit}
-              disabled={selectedNumbers.length !== 4 || gameOver}
+              disabled={selectedNumbers.length !== 4}
             >
               Submit
             </button>
           )}
 
-          {gameOver && (
-            <div className="game-over">
-              <h2>{gameWon ? "Congratulations!" : "Game Over!"}</h2>
-              {renderCategoryReveal()}
-              <button onClick={playAgain} className="play-again-button">
-                Play Again
-              </button>
+          {!gameOver && (
+            <div className="attempts-counter">
+              <span className="attempts-label">Attempts remaining:</span>
+              {[...Array(4)].map((_, i) => (
+                <span key={i} className={`attempt-dot ${i >= attempts ? "used" : ""}`}>
+                  ●
+                </span>
+              ))}
             </div>
           )}
-
-          <div className="attempts-counter">Attempts remaining: {attempts}</div>
         </div>
       )}
     </div>
