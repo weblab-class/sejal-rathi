@@ -4,11 +4,11 @@
   align-items: center;
   min-height: 100vh;
   padding: 2rem;
-  background-color: #edf2ff;
+  background-color: var(--light-bg);
 }
 
 .setup-container h1 {
-  color: #2c3e50;
+  color: var(--dark-text);
   margin-bottom: 2rem;
   font-size: 2.5rem;
   text-align: center;
@@ -118,8 +118,6 @@ button:hover {
   color: white;
   border-radius: 5px;
   text-align: center;
-  width: 100%;
-  max-width: 600px;
 }
 
 .setup-box {
@@ -160,36 +158,32 @@ button:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+.tic-error-message {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #fecaca;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+}
+
 .join-room {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
 
-.room-code-input {
+.tic-room-code-input {
   padding: 1rem 2rem;
   font-size: 1.2rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid #a2a2a2;
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: inherit;
+  background-color: var(--light-bg);
+  color: var(--dark-text);
   font-family: var(--font);
   text-align: center;
-}
-
-.room-code-input.light {
-  border-color: rgba(0, 0, 0, 0.2);
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--dark-text);
-}
-
-.room-code-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-  font-family: var(--font);
-}
-
-.room-code-input.light::placeholder {
-  color: rgba(0, 0, 0, 0.4);
 }
 
 .room-code-input:focus {

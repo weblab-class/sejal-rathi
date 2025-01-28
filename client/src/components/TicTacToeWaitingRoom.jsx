@@ -36,12 +36,12 @@ const TicTacToeWaitingRoom = () => {
 
         socketInstance = socket;
         console.log("Joining game room:", gameCode, "as user:", userInfo._id);
-        socket.emit("join room", { 
-          gameCode, 
-          user: { 
+        socket.emit("join room", {
+          gameCode,
+          user: {
             _id: userInfo._id,
-            name: userInfo.name 
-          } 
+            name: userInfo.name,
+          },
         });
 
         socket.on("game:error", (error) => {
@@ -70,17 +70,17 @@ const TicTacToeWaitingRoom = () => {
         socket.on("player:reconnected", (data) => {
           if (!mounted) return;
           console.log("Player reconnected:", data);
-          setPlayers(prev => prev.map(p => 
-            p.socketId === data.userId ? { ...p, connected: true } : p
-          ));
+          setPlayers((prev) =>
+            prev.map((p) => (p.socketId === data.userId ? { ...p, connected: true } : p))
+          );
         });
 
         socket.on("player:disconnected", (data) => {
           if (!mounted) return;
           console.log("Player disconnected:", data);
-          setPlayers(prev => prev.map(p => 
-            p.socketId === data.socketId ? { ...p, connected: false } : p
-          ));
+          setPlayers((prev) =>
+            prev.map((p) => (p.socketId === data.socketId ? { ...p, connected: false } : p))
+          );
         });
 
         socket.on("game:start", ({ board, currentPlayer, category }) => {
@@ -106,12 +106,12 @@ const TicTacToeWaitingRoom = () => {
         socket.on("reconnect", () => {
           if (!mounted) return;
           console.log("Socket reconnected, rejoining room");
-          socket.emit("join room", { 
-            gameCode, 
-            user: { 
+          socket.emit("join room", {
+            gameCode,
+            user: {
               _id: userInfo._id,
-              name: userInfo.name 
-            } 
+              name: userInfo.name,
+            },
           });
         });
 
@@ -120,7 +120,6 @@ const TicTacToeWaitingRoom = () => {
           console.log("Questions received in waiting room:", { questions, board });
           setGameQuestions({ questions, board });
         });
-
       } catch (err) {
         if (mounted) {
           console.error("Socket initialization error:", err);
@@ -172,7 +171,7 @@ const TicTacToeWaitingRoom = () => {
       console.log("Starting game with category:", category);
       socket.emit("start game", {
         gameCode,
-        category
+        category,
       });
     } catch (err) {
       console.error("Error starting game:", err);
@@ -183,35 +182,37 @@ const TicTacToeWaitingRoom = () => {
   if (error) {
     return (
       <div className="tictactoe-waiting">
-        <div className="error-message">{error}</div>
+        <div className="tic-error-message">{error}</div>
       </div>
     );
   }
 
   if (showCountdown) {
-    return <GameCountdown 
-      gameCode={gameCode} 
-      category={category}
-      initialState={gameState}
-      playerSymbol={playerSymbol}
-    />;
+    return (
+      <GameCountdown
+        gameCode={gameCode}
+        category={category}
+        initialState={gameState}
+        playerSymbol={playerSymbol}
+      />
+    );
   }
 
   return (
     <div className="tictactoe-waiting">
       <h2>Game Code: {gameCode}</h2>
-      {playerSymbol && (
-        <div className="player-info">
-          You are Player {playerSymbol}
-        </div>
-      )}
+      {playerSymbol && <div className="tic-player-info">You are Player {playerSymbol}</div>}
       <div className="player-list">
         <h3>Players ({players.length}/2):</h3>
-        {players.map((player, index) => (
-          <div key={index} className="player-item">
-            Player {index + 1} ({player.symbol})
-            {player.isHost ? " (Host)" : ""}
-            {player.connected ? "" : " (Disconnected)"}
+        {players.map((player) => (
+          <div key={player.socketId} className="tic-player-item">
+            <span className="player-name">
+              {player.name} {player.isHost ? "(Host)" : ""}
+            </span>
+            <span className="player-status">
+              {player.symbol}
+              {!player.connected && " (Disconnected)"}
+            </span>
           </div>
         ))}
       </div>
@@ -219,7 +220,7 @@ const TicTacToeWaitingRoom = () => {
       {isHost && (
         <div className="category-selection">
           <h3>Category:</h3>
-          <select 
+          <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="category-select"
@@ -232,17 +233,13 @@ const TicTacToeWaitingRoom = () => {
       )}
 
       {players.length < 2 ? (
-        <div className="waiting-message">
-          Waiting for opponent to join...
-        </div>
+        <div className="waiting-message">Waiting for opponent to join...</div>
       ) : isHost ? (
         <button className="start-button" onClick={handleStartGame}>
           Start Game
         </button>
       ) : (
-        <div className="waiting-message">
-          Waiting for host to start the game...
-        </div>
+        <div className="waiting-message">Waiting for host to start the game...</div>
       )}
     </div>
   );

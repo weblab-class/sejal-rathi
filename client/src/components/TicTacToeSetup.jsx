@@ -108,19 +108,6 @@ const TicTacToeSetup = () => {
     <div className={`setup-container ${isDarkMode ? "dark" : "light"}`}>
       <h1>Game Setup</h1>
       <div className="setup-box">
-        <div className="category-selection">
-          <h2>Select Category</h2>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="category-select"
-          >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-
         <div className="setup-options">
           <button className="setup-button" onClick={handleCreateRoom}>
             Create a Room
@@ -135,9 +122,9 @@ const TicTacToeSetup = () => {
                 setJoinCode(e.target.value);
                 setError(""); // Clear error when input changes
               }}
-              className={`room-code-input ${error ? "error" : ""}`}
+              className={`tic-room-code-input ${error ? "error" : ""}`}
             />
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="tic-error-message">{error}</div>}
             <button className="setup-button" onClick={handleJoinRoom}>
               Join Room
             </button>

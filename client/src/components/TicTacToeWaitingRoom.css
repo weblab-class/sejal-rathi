@@ -1,196 +1,188 @@
-.waiting-room-container {
-  min-height: calc(100vh - 60px);
+.tictactoe-waiting {
+  min-height: 100vh;
   padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #edf2ff;
-}
-
-.waiting-room-container.dark {
-  background-color: var(--dark-bg);
-  color: var(--light-text);
-}
-
-.waiting-room-container.light {
-  background-color: #edf2ff;
-  color: var(--dark-text);
-}
-
-.waiting-room-container h1 {
-  font-size: 2.5rem;
-  margin: 1rem 0 3rem 0;
-  text-align: center;
-  font-weight: bold;
+  background: linear-gradient(135deg, #f5f7ff 0%, #c3e0ff 100%);
   font-family: var(--font);
 }
 
-.waiting-room-box {
-  background-color: #edf2ff;
-  padding: 2rem;
+h2 {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-weight: bold;
+}
+
+.tic-player-info {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem 2rem;
   border-radius: 12px;
+  font-size: 1.2rem;
+  color: #2196f3;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(33, 150, 243, 0.1);
+  border: 2px solid rgba(33, 150, 243, 0.2);
+}
+
+.player-list {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
   width: 100%;
   max-width: 500px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.waiting-room-box.light {
-  border-color: rgba(0, 0, 0, 0.1);
+.player-list h3 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-top: 0px;
 }
 
-.room-code-display {
-  text-align: center;
-}
-
-.room-code-display h2 {
-  font-size: 1.5rem;
+.tic-player-item {
+  background: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
   margin-bottom: 1rem;
-  font-family: var(--font);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e9ecef;
+  transition: transform 0.2s ease;
 }
 
-.room-code-display .code {
-  font-size: 2.5rem;
-  font-weight: bold;
+.tic-player-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.player-name {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.player-status {
   color: #2196f3;
-  margin: 1rem 0;
-  font-family: var(--font);
-}
-
-.room-code-display p {
-  color: rgba(255, 255, 255, 0.7);
-  font-family: var(--font);
-}
-
-.room-code-display.light p {
-  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .category-selection {
-  text-align: center;
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.category-selection h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  font-family: var(--font);
+.category-selection h3 {
+  margin-top: 0px;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .category-select {
   width: 100%;
-  padding: 1rem 2rem;
-  font-size: 1.2rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 1rem;
+  border: 2px solid #e9ecef;
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: inherit;
-  font-family: var(--font);
+  font-size: 1.1rem;
+  color: #2c3e50;
+  background: #f8f9fa;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.category-select.light {
-  border-color: rgba(0, 0, 0, 0.2);
-  background-color: rgba(0, 0, 0, 0.05);
+.category-select:hover {
+  border-color: #2196f3;
 }
 
 .category-select:focus {
   outline: none;
   border-color: #2196f3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
 }
 
-.status-message {
-  text-align: center;
+.waiting-message {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
   font-size: 1.2rem;
-  color: #2196f3;
-  font-family: var(--font);
+  color: #6c757d;
+  text-align: center;
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e9ecef;
+  max-width: 500px;
+  width: 100%;
 }
 
 .start-button {
-  padding: 1rem 2rem;
-  font-size: 1.2rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #2196f3;
+  background: #2196f3;
   color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-family: var(--font);
   width: 100%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(33, 150, 243, 0.2);
 }
 
 .start-button:hover {
+  background: #1976d2;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
 }
 
-.join-button {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  background-color: #4caf50;
-  color: white;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.join-button:hover {
-  background-color: #45a049;
-}
-
-.join-button:disabled {
-  background-color: #cccccc;
+.start-button:disabled {
+  background: #e9ecef;
   cursor: not-allowed;
-}
-
-.loading-text {
-  font-size: 1.2rem;
-  color: #666;
+  transform: none;
+  box-shadow: none;
 }
 
 .error-message {
-  color: #e74c3c;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
-.room-code-input {
-  width: 100%;
-  max-width: 300px;
-  padding: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 1rem 1.5rem;
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.1);
-  font-size: 1.2rem;
+  margin-top: 1rem;
   text-align: center;
-  color: inherit;
-  font-family: var(--font);
+  width: 100%;
+  max-width: 500px;
+  border: 1px solid #fecaca;
 }
 
-.room-code-input.dark {
-  border-color: rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--dark-text);
-}
+@media (max-width: 600px) {
+  .tictactoe-waiting {
+    padding: 1rem;
+  }
 
-.room-code-input.light {
-  border-color: rgba(0, 0, 0, 0.2);
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--light-text);
-}
+  h2 {
+    font-size: 2rem;
+  }
 
-.room-code-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.room-code-input:focus {
-  outline: none;
-  border-color: #4caf50;
-}
-
-.room-code-input.error {
-  border-color: #e74c3c;
+  .player-list,
+  .category-selection,
+  .waiting-message,
+  .start-button {
+    width: 90%;
+  }
 }

@@ -198,9 +198,9 @@ const init = (server, sessionMiddleware) => {
           });
 
           if (gameRoom.gameOver) {
-            io.to(gameCode).emit("game:over", { 
+            io.to(gameCode).emit("game:over", {
               winner: gameRoom.winner,
-              gameOver: true
+              gameOver: true,
             });
           }
         } else {
