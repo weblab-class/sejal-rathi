@@ -3,17 +3,35 @@ import { useNavigate } from "react-router-dom";
 import { get } from "../utilities";
 import "./Profile.css";
 
-const Profile = ({ userId }) => {
+const Profile = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
 
+  // First check if user is logged in
   useEffect(() => {
-    if (!userId) {
-      navigate("/");
-      return;
-    }
+    const checkUser = async () => {
+      try {
+        const userData = await get("/api/whoami");
+        if (!userData._id) {
+          navigate("/");
+          return;
+        }
+        setUser(userData);
+      } catch (err) {
+        console.error("Failed to check user:", err);
+        navigate("/");
+      }
+    };
+
+    checkUser();
+  }, [navigate]);
+
+  // Then load stats if user is present
+  useEffect(() => {
+    if (!user) return;
 
     const loadStats = async () => {
       try {
@@ -28,7 +46,7 @@ const Profile = ({ userId }) => {
     };
 
     loadStats();
-  }, [userId, navigate]);
+  }, [user]);
 
   if (loading) {
     return <div className="profile-container">Loading...</div>;

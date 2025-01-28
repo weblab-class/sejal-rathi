@@ -221,8 +221,8 @@ const TicTacToe = () => {
           // Update stats when game ends in multiplayer
           if (gameOver && winner && winner !== "tie") {
             post("/api/stats/tictactoe", {
-              won: winner === playerSymbol
-            }).catch(err => console.error("Failed to update stats:", err));
+              won: winner === playerSymbol,
+            }).catch((err) => console.error("Failed to update stats:", err));
           }
         });
       } catch (err) {

@@ -26,7 +26,7 @@ export const initiateSocket = async () => {
           withCredentials: true,
           reconnection: true,
           reconnectionAttempts: 5,
-          reconnectionDelay: 1000
+          reconnectionDelay: 1000,
         });
 
         socket.on("connect", async () => {
@@ -61,7 +61,6 @@ export const initiateSocket = async () => {
         socket.on("reconnect_error", (error) => {
           console.error("Socket reconnection error:", error);
         });
-
       } catch (error) {
         console.error("Socket setup error:", error);
         reject(error);
@@ -79,7 +78,7 @@ export const initiateSocket = async () => {
 export const getSocket = () => {
   if (!socket?.connected) {
     // If socket doesn't exist or isn't connected, try to initialize
-    initiateSocket().catch(err => {
+    initiateSocket().catch((err) => {
       console.error("Failed to get socket:", err);
     });
   }
