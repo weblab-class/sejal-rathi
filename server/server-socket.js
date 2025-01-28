@@ -254,7 +254,7 @@ const init = (server, sessionMiddleware) => {
       if (socket.gameCode) {
         // Notify other players about disconnection
         socket.to(socket.gameCode).emit("player:disconnected", {
-          socketId: socket.id,
+          socketId: socket.userId,
           symbol: socket.symbol,
         });
       }

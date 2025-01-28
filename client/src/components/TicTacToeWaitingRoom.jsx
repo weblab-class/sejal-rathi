@@ -200,6 +200,7 @@ const TicTacToeWaitingRoom = () => {
 
   return (
     <div className="tictactoe-waiting">
+      <h1>Tic Tac Toe Waiting Room</h1>
       <h2>Game Code: {gameCode}</h2>
       {playerSymbol && <div className="tic-player-info">You are Player {playerSymbol}</div>}
       <div className="player-list">
@@ -235,9 +236,13 @@ const TicTacToeWaitingRoom = () => {
       {players.length < 2 ? (
         <div className="waiting-message">Waiting for opponent to join...</div>
       ) : isHost ? (
-        <button className="start-button" onClick={handleStartGame}>
-          Start Game
-        </button>
+        players.every((player) => player.connected) ? (
+          <button className="start-button" onClick={handleStartGame}>
+            Start Game
+          </button>
+        ) : (
+          <div className="waiting-message">Waiting for all players to connect...</div>
+        )
       ) : (
         <div className="waiting-message">Waiting for host to start the game...</div>
       )}

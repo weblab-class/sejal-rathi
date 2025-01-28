@@ -3,7 +3,7 @@
   padding: 2rem;
   text-align: center;
   min-height: calc(100vh - 60px);
-  background: var(--light-container);
+  background: var(--light-bg);
   color: var(--light-text);
 }
 
@@ -15,12 +15,13 @@ body.dark .game-container {
 .game-container h1 {
   font-size: 3rem;
   margin-bottom: 1.5rem;
+  color: var(--dark-text);
 }
 
 .category {
   font-size: 1.2rem;
   margin: 1rem 0;
-  color: var(--light-text);
+  color: var(--dark-text);
 }
 
 body.dark .category {
@@ -88,10 +89,11 @@ body.dark .game-status {
   hyphens: auto;
   color: var(--dark-text);
   position: relative;
+  border: 1px solid var(--dark-text);
 }
 
 body.dark .cell {
-  background: var(--dark-bg);
+  background: var(--light-bg);
   color: var(--dark-text);
 }
 
@@ -126,7 +128,7 @@ body.dark .cell {
 }
 
 .feedback-icon.correct {
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .feedback-icon.incorrect {
@@ -199,7 +201,7 @@ body.dark .game-code-instructions {
 
 .player-info {
   font-size: 1.2rem;
-  color: var(--light-text);
+  color: var(--dark-text);
   font-weight: bold;
 }
 
