@@ -214,16 +214,12 @@ const TicTacToe = () => {
           if (winner) setWinner(winner);
         });
 
-        socket.on("game:over", ({ gameOver, winner }) => {
+        socket.on("game:over", ({ winner, gameOver, board }) => {
           if (!mounted) return;
-          setGameOver(gameOver);
+          console.log("Game over, winner:", winner);
           setWinner(winner);
-          // Update stats when game ends in multiplayer
-          if (gameOver && winner && winner !== "tie") {
-            post("/api/stats/tictactoe", {
-              won: winner === playerSymbol,
-            }).catch((err) => console.error("Failed to update stats:", err));
-          }
+          setGameOver(gameOver);
+          if (board) setBoard(board);
         });
       } catch (err) {
         if (mounted) {

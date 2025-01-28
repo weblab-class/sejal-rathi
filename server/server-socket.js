@@ -199,9 +199,37 @@ const init = (server, sessionMiddleware) => {
 
           if (gameRoom.gameOver) {
             io.to(gameCode).emit("game:over", {
-              winner: gameRoom.winner,
               gameOver: true,
+              winner: gameRoom.winner,
+              board: gameRoom.board,
+              currentPlayer: gameRoom.currentPlayer
             });
+
+            // Update player stats
+            try {
+              const User = require("./models/user");
+              const players = gameRoom.players;
+              
+              for (const player of players) {
+                const user = await User.findById(player.userId);
+                if (user) {
+                  user.tictactoeStats.gamesPlayed += 1;
+                  if (gameRoom.winner === "tie") {
+                    user.tictactoeStats.gamesTied += 1;
+                  } else if (gameRoom.winner === player.symbol) {
+                    user.tictactoeStats.gamesWon += 1;
+                    user.tictactoeStats.currentWinStreak += 1;
+                    user.tictactoeStats.winStreak = Math.max(user.tictactoeStats.winStreak, user.tictactoeStats.currentWinStreak);
+                  } else {
+                    user.tictactoeStats.gamesLost += 1;
+                    user.tictactoeStats.currentWinStreak = 0;
+                  }
+                  await user.save();
+                }
+              }
+            } catch (err) {
+              console.error("Failed to update player stats:", err);
+            }
           }
         } else {
           // Only notify the player who made incorrect guess
