@@ -42,6 +42,7 @@ const TicTacToe = () => {
   const [currentPlayer, setCurrentPlayer] = useState("X"); // Set initial player for single player
   const [feedback, setFeedback] = useState(null);
   const [lastClickedCell, setLastClickedCell] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   // Load questions for single player mode
   useEffect(() => {
@@ -130,6 +131,7 @@ const TicTacToe = () => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             setGameOver(true);
+            console.log("Game over due to time out");
             setWinner(null); // No winner if time runs out
             // Update stats for loss due to timeout
             post("/api/stats/tictactoe", { won: false }).catch((err) =>
@@ -152,54 +154,7 @@ const TicTacToe = () => {
     setCurrentQuestion(board[index]);
 
     if (modeState === "single") {
-      const userAnswer = prompt(`Answer this question: ${board[index].value}`);
-      if (!userAnswer) return;
-
-      // Check if answer is correct
-      console.log(board[index].answer);
-      if (userAnswer.trim().toLowerCase() === board[index].answer.toString()) {
-        // Update board
-        const newBoard = [...board];
-        newBoard[index] = {
-          ...newBoard[index],
-          solved: true,
-          player: "X",
-        };
-        setBoard(newBoard);
-        setFeedback({ correct: true, index });
-        // Clear feedback after 1 second
-        setTimeout(() => setFeedback(null), 1000);
-
-        // Check for winner (3 in a row)
-        const lines = [
-          [0, 1, 2], // Rows
-          [3, 4, 5],
-          [6, 7, 8],
-          [0, 3, 6], // Columns
-          [1, 4, 7],
-          [2, 5, 8],
-          [0, 4, 8], // Diagonals
-          [2, 4, 6],
-        ];
-
-        for (const [a, b, c] of lines) {
-          if (newBoard[a]?.solved && newBoard[b]?.solved && newBoard[c]?.solved) {
-            setGameOver(true);
-            setWinner("X");
-            // Update stats for win
-            try {
-              await post("/api/stats/tictactoe", { won: true });
-            } catch (err) {
-              console.error("Failed to update stats:", err);
-            }
-            return;
-          }
-        }
-      } else {
-        setFeedback({ correct: false, index });
-        // Clear feedback after 1 second
-        setTimeout(() => setFeedback(null), 1000);
-      }
+      setShowModal(true);
     } else if (modeState === "two-player" && gameCode) {
       const userAnswer = prompt(`Answer this question: ${board[index].value}`);
       if (!userAnswer) return;
@@ -222,6 +177,69 @@ const TicTacToe = () => {
         setError("Failed to submit answer");
       }
     }
+  };
+
+  // Handle answer submission for single player mode
+  const handleAnswerSubmit = async (e) => {
+    e.preventDefault();
+    const userAnswer = answer.trim().toLowerCase();
+    const index = selectedCell;
+
+    // Check if answer is correct
+    if (userAnswer === currentQuestion.answer.toString()) {
+      // Update board
+      const newBoard = [...board];
+      newBoard[index] = {
+        ...newBoard[index],
+        solved: true,
+        player: "X",
+      };
+      setBoard(newBoard);
+      setFeedback({ correct: true, index });
+      // Clear feedback after 1 second
+      setTimeout(() => setFeedback(null), 1000);
+
+      // Check for winner (3 in a row)
+      const lines = [
+        [0, 1, 2], // Rows
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6], // Columns
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8], // Diagonals
+        [2, 4, 6],
+      ];
+
+      for (const [a, b, c] of lines) {
+        if (newBoard[a]?.solved && newBoard[b]?.solved && newBoard[c]?.solved) {
+          setGameOver(true);
+          setWinner("X");
+          // Update stats for win
+          try {
+            await post("/api/stats/tictactoe", { won: true });
+          } catch (err) {
+            console.error("Failed to update stats:", err);
+          }
+          return;
+        }
+      }
+    } else {
+      setFeedback({ correct: false, index });
+      // Clear feedback after 1 second
+      setTimeout(() => setFeedback(null), 1000);
+    }
+
+    // Clear answer input and close modal
+    setAnswer("");
+    setShowModal(false);
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setAnswer("");
+    setCurrentQuestion(null);
+    setSelectedCell(null);
   };
 
   // Socket setup for multiplayer mode
@@ -447,6 +465,27 @@ const TicTacToe = () => {
           </div>
         ))}
       </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={handleModalClose}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="question-text">{currentQuestion.value}</div>
+            <form onSubmit={handleAnswerSubmit}>
+              <input
+                type="text"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Enter your answer..."
+                autoFocus
+              />
+              <div className="modal-buttons">
+                <button type="submit">Submit</button>
+                <button type="button" onClick={handleModalClose}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {gameOver && (
         <div className="game-over">
