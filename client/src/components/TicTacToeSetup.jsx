@@ -110,7 +110,7 @@ const TicTacToeSetup = () => {
           ↩
         </button>
       </div>
-      <h1>Tic Tac Toe Game Setup</h1>
+      <h1>Num-Tac-Toe Setup</h1>
       <div className="setup-box">
         <div className="setup-options">
           <button className="setup-button" onClick={handleCreateRoom}>

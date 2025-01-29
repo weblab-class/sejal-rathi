@@ -10,7 +10,7 @@ const GameSelect = () => {
   const games = [
     {
       id: "tictactoe",
-      title: "tic-tac-toe",
+      title: "num-tac-toe",
       description: "Race to get 3 in a row by solving questions!",
       colorDark: "#9DDFF2",
       colorLight: "#00B5E8",
@@ -18,7 +18,7 @@ const GameSelect = () => {
     },
     {
       id: "mathnections",
-      title: "math-nections",
+      title: "num-nections",
       description: "Identify the four categories among these 16 numbers!",
       colorDark: "#F9CFF2",
       colorLight: "#DC6AC9",

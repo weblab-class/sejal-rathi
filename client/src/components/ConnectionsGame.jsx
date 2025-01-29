@@ -548,7 +548,7 @@ const ConnectionsGame = () => {
             ↩
           </button>
         </div>
-        <h1>Math-nections</h1>
+        <h1>Num-nections</h1>
         <div className="setup-content">
           <h2>Select Difficulty</h2>
           <div className="difficulty-options">
@@ -579,7 +579,7 @@ const ConnectionsGame = () => {
       </div>
       <div className="game-content">
         <div className="game-header">
-          <h1>Mathnections</h1>
+          <h1>Num-nections</h1>
         </div>
 
         {error && <div className="error-message">{error}</div>}

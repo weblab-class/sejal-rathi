@@ -205,7 +205,7 @@ const TicTacToeWaitingRoom = () => {
           ↩
         </button>
       </div>
-      <h1>Tic Tac Toe Waiting Room</h1>
+      <h1>Num-Tac-Toe Waiting Room</h1>
       <h2>Game Code: {gameCode}</h2>
       {playerSymbol && <div className="tic-player-info">You are Player {playerSymbol}</div>}
       <div className="player-list">

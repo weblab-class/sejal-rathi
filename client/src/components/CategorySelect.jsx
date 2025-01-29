@@ -71,9 +71,9 @@ const CategorySelect = () => {
           ↩
         </button>
       </div>
-      
+
       <div className={`category-select-wrapper ${isDarkMode ? "dark" : "light"}`}>
-        <h1>Tic Tac Toe</h1>
+        <h1>Num-Tac-Toe</h1>
         <div className="tic-category-select-container">
           <h2>Select a Category</h2>
           <div className="select-group">

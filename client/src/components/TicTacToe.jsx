@@ -527,7 +527,7 @@ const TicTacToe = () => {
           ↩
         </button>
       </div>
-      <h1>Tic Tac Toe</h1>
+      <h1>Num-Tac-Toe</h1>
       <div className="category">Category: {category}</div>
 
       {modeState === "two-player" && (
