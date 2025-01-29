@@ -1,8 +1,8 @@
 :root {
   --dark-bg: #111344;
-  --light-bg: #DAE0F2;
+  --light-bg: #edf2ff;
   --dark-text: #111344;
-  --light-text: #DAE0F2;
+  --light-text: #edf2ff;
 }
 
 body {

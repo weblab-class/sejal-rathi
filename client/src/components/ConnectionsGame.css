@@ -1,6 +1,6 @@
 .connections-game {
   min-height: 100vh;
-  background-color: #1a1a2e;
+  background-color: var(--light-bg);
   padding: 20px;
   position: relative;
   width: 100%;
@@ -17,7 +17,7 @@
   margin-top: 20px;
 }
 
-.message {
+.connect-message {
   text-align: center;
   margin: 10px 0;
   padding: 8px;
@@ -43,7 +43,7 @@
 
 .number-cell {
   aspect-ratio: 1;
-  border: none;
+  border: 1px solid var(--dark-text);
   border-radius: 8px;
   background-color: var(--light-bg);
   color: var(--dark-text);
@@ -71,11 +71,11 @@
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  margin: 10px 0;
+  margin: 0px 0;
   border-radius: 8px;
   color: white;
   width: 100%;
-  max-width: 600px;
+  max-width: 530px;
 }
 
 .category-title {
@@ -120,7 +120,7 @@
 }
 
 .number-cell.selected {
-  background-color: #e3f2fd;
+  background-color: #aed7f4;
   border-color: #2196f3;
 }
 
@@ -222,6 +222,7 @@
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s;
+  max-width: 200px;
 }
 
 .play-again-button:hover {
@@ -256,7 +257,7 @@
   color: var(--dark-text);
   opacity: 1;
   transition: opacity 0.3s ease;
-  color: white;
+  color: var(--dark-text);
 }
 
 .attempt-dot.used {
@@ -264,7 +265,7 @@
 }
 
 .attempts-label {
-  color: white;
+  color: var(--dark-text);
   font-size: 24px;
   padding-right: 10px;
 }
@@ -293,6 +294,7 @@
 .game-header h1 {
   margin-bottom: 10px;
   font-size: 40px;
+  color: var(--dark-text);
 }
 
 .game-over {
@@ -302,14 +304,13 @@
 
 .game-over h2 {
   margin-bottom: 10px;
-  color: var(--primary-color);
+  color: var(--dark-text);
 }
 
 .status-message {
   margin: 10px 0;
   padding: 8px;
   border-radius: 4px;
-  background-color: var(--light-bg);
   color: var(--dark-text);
   font-weight: 500;
 }

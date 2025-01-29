@@ -42,7 +42,7 @@ const ConnectionsGame = () => {
     setGameOver(true);
     setGameWon(won);
     setMessage("");
-    
+
     try {
       await post("/api/stats/connections", {
         won,
@@ -553,7 +553,7 @@ const ConnectionsGame = () => {
         </div>
 
         {error && <div className="error-message">{error}</div>}
-        {message && <div className="message">{message}</div>}
+        {message && <div className="connect-message">{message}</div>}
 
         <div className="game-board">
           {renderSolvedCategories()}
