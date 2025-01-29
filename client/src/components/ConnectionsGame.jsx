@@ -46,10 +46,24 @@ const ConnectionsGame = () => {
     try {
       await post("/api/stats/connections", {
         won,
-        attempts: 5 - attempts, // 5 is max attempts, so 5 - attempts = used attempts
+        attempts: 5 - attempts,
       });
     } catch (err) {
       console.error("Failed to update stats:", err);
+    }
+
+    // If game is lost, mark all categories as solved
+    if (!won) {
+      const newDisplayedNumbers = displayedNumbers.map((num) => ({
+        ...num,
+        solved: true,
+        selected: false,
+      }));
+      setDisplayedNumbers(newDisplayedNumbers);
+
+      // Add all categories to solvedCategories in order
+      const allCategoryIds = categories.map((cat) => cat._id);
+      setSolvedCategories(allCategoryIds);
     }
   };
 
@@ -207,20 +221,19 @@ const ConnectionsGame = () => {
   // Function to render solved categories
   const renderSolvedCategories = () => {
     const solvedCats = categories.filter((cat) =>
-      displayedNumbers.some((num) => num.categoryId === cat._id && num.solved)
+      displayedNumbers.some((num) => num.categoryId === cat._id && (num.solved || gameOver))
     );
 
     return solvedCats.map((category) => {
-      // Get the actual numbers for this category that were in the game
       const categoryNumbers = displayedNumbers
         .filter((num) => num.categoryId === category._id)
         .map((num) => num.value)
-        .sort((a, b) => a - b) // Sort numbers in ascending order
+        .sort((a, b) => a - b)
         .join(", ");
 
       return (
         <div key={category._id} className={`category-row level-${category.level}`}>
-          <div className="category-title">{category.name}</div>
+          <div className="category-title">{category.name.toUpperCase()}</div>
           <div className="category-subtitle">{categoryNumbers}</div>
         </div>
       );
@@ -536,28 +549,27 @@ const ConnectionsGame = () => {
 
   return (
     <div className="connections-game">
-      <button className="back-button" onClick={() => navigate("/games")}>
-        ↩
-      </button>
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => navigate("/games")}>
+          ↩
+        </button>
+      </div>
       <div className="game-content">
         <div className="game-header">
           <h1>Mathnections</h1>
-          {gameOver && (
-            <div className="game-over">
-              <h2>{gameWon ? "Congratulations!" : "Game Over!"}</h2>
-              <button onClick={playAgain} className="play-again-button">
-                Play Again
-              </button>
-            </div>
-          )}
         </div>
 
         {error && <div className="error-message">{error}</div>}
         {message && <div className="connect-message">{message}</div>}
+        {gameOver && (
+          <div className="game-over">
+            <h2>{gameWon ? "Congratulations!" : "Game Over!"}</h2>
+          </div>
+        )}
 
         <div className="game-board">
           {renderSolvedCategories()}
-          {renderRemainingNumbers()}
+          {!gameOver && renderRemainingNumbers()}
 
           {selectedNumbers.length > 0 && !gameOver && (
             <button
@@ -580,6 +592,12 @@ const ConnectionsGame = () => {
             </div>
           )}
         </div>
+
+        {gameOver && (
+          <button className="play-again-button" onClick={playAgain}>
+            Play Again
+          </button>
+        )}
       </div>
     </div>
   );

@@ -76,6 +76,7 @@
   color: white;
   width: 100%;
   max-width: 530px;
+  margin-top: 10px;
 }
 
 .category-title {
@@ -90,8 +91,7 @@
 }
 
 .category-row.level-1 {
-  background-color: #f7da21;
-  color: black;
+  background-color: #e5c600;
 }
 
 .category-row.level-2 {
@@ -213,7 +213,7 @@
 }
 
 .play-again-button {
-  margin-top: 10px;
+  margin-top: 30px;
   padding: 10px 20px;
   font-size: 24px;
   background-color: #4caf50;
@@ -223,6 +223,7 @@
   cursor: pointer;
   transition: background-color 0.3s;
   max-width: 200px;
+  font-family: inherit;
 }
 
 .play-again-button:hover {
@@ -347,8 +348,8 @@
 
 .back-button {
   position: absolute;
-  top: 20px;
-  left: 40px;
+  top: 5px;
+  left: 5px;
   background: none;
   border: none;
   color: #666;
@@ -361,6 +362,8 @@
 
 .back-button:hover {
   transform: scale(1.2);
+  color: #666;
+  background-color: #edf2ff;
 }
 
 :root {
