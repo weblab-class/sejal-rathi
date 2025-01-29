@@ -35,7 +35,6 @@ const TicTacToeWaitingRoom = () => {
         if (!socket || !mounted) return;
 
         socketInstance = socket;
-        console.log("Joining game room:", gameCode, "as user:", userInfo._id);
         socket.emit("join room", {
           gameCode,
           user: {
@@ -53,7 +52,6 @@ const TicTacToeWaitingRoom = () => {
 
         socket.on("game:joined", ({ symbol, isHost, gameState }) => {
           if (!mounted) return;
-          console.log("Joined as player:", symbol, "Game state:", gameState);
           setPlayerSymbol(symbol);
           if (gameState) {
             // If game has already started, redirect to game
@@ -63,13 +61,11 @@ const TicTacToeWaitingRoom = () => {
 
         socket.on("player joined", (data) => {
           if (!mounted) return;
-          console.log("Player joined:", data);
           setPlayers(data.players || []);
         });
 
         socket.on("player:reconnected", (data) => {
           if (!mounted) return;
-          console.log("Player reconnected:", data);
           setPlayers((prev) =>
             prev.map((p) => (p.socketId === data.userId ? { ...p, connected: true } : p))
           );
@@ -77,7 +73,6 @@ const TicTacToeWaitingRoom = () => {
 
         socket.on("player:disconnected", (data) => {
           if (!mounted) return;
-          console.log("Player disconnected:", data);
           setPlayers((prev) =>
             prev.map((p) => (p.socketId === data.socketId ? { ...p, connected: false } : p))
           );
@@ -85,27 +80,23 @@ const TicTacToeWaitingRoom = () => {
 
         socket.on("game:start", ({ board, currentPlayer, category }) => {
           if (!mounted) return;
-          console.log("Game starting with:", { board, currentPlayer, category });
           setGameState({ board, currentPlayer });
           setShowCountdown(true);
         });
 
         socket.on("game:update", ({ board, currentPlayer, winner }) => {
           if (!mounted) return;
-          console.log("Game updated:", { board, currentPlayer, winner });
           setGameState({ board, currentPlayer, winner });
         });
 
         socket.on("questions:received", ({ questions, board }) => {
           if (!mounted) return;
-          console.log("Questions received in waiting room:", { questions, board });
           setGameQuestions({ questions, board });
         });
 
         // Handle socket reconnection
         socket.on("reconnect", () => {
           if (!mounted) return;
-          console.log("Socket reconnected, rejoining room");
           socket.emit("join room", {
             gameCode,
             user: {
@@ -117,7 +108,6 @@ const TicTacToeWaitingRoom = () => {
 
         socket.on("questions:received", ({ questions, board }) => {
           if (!mounted) return;
-          console.log("Questions received in waiting room:", { questions, board });
           setGameQuestions({ questions, board });
         });
       } catch (err) {
@@ -168,7 +158,6 @@ const TicTacToeWaitingRoom = () => {
         return;
       }
 
-      console.log("Starting game with category:", category);
       socket.emit("start game", {
         gameCode,
         category,

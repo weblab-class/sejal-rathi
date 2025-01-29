@@ -20,8 +20,6 @@ const TicTacToe = () => {
     timeLimit,
   } = location.state || {};
 
-  console.log("Game mounted with state:", location.state);
-
   const { isDarkMode } = useTheme();
 
   const [userId, setUserId] = useState(null);
@@ -66,14 +64,6 @@ const TicTacToe = () => {
     const loadQuestions = async () => {
       if (modeState === "single") {
         try {
-          console.log("Starting to load questions...");
-          console.log("Current state:", {
-            modeState,
-            category,
-            gameStarted,
-            loading,
-          });
-
           // Make sure we have a category before making the request
           if (!category) {
             console.error("No category selected");
@@ -84,13 +74,10 @@ const TicTacToe = () => {
 
           // Log the exact request we're about to make
           const requestUrl = `/api/questions?category=${encodeURIComponent(category)}`;
-          console.log("Making API call to:", requestUrl);
 
           const fetchedQuestions = await get(requestUrl);
-          console.log("Received questions:", fetchedQuestions);
 
           if (fetchedQuestions && fetchedQuestions.length > 0) {
-            console.log("Setting up board with questions");
             setQuestions(fetchedQuestions);
             const newBoard = Array(9)
               .fill()
@@ -103,7 +90,6 @@ const TicTacToe = () => {
             setBoard(newBoard);
             setGameStarted(true);
             setLoading(false);
-            console.log("Board setup complete");
           } else {
             console.error("No questions returned from API");
             throw new Error("No questions available");
@@ -119,7 +105,6 @@ const TicTacToe = () => {
           setLoading(false);
         }
       } else {
-        console.log("Not loading questions - not in single player mode");
         setLoading(false);
       }
     };
@@ -134,12 +119,8 @@ const TicTacToe = () => {
     const loadGameState = async () => {
       if (modeState === "two-player" && gameCode) {
         try {
-          console.log("Loading game state for room:", gameCode);
-          console.log("Location state:", location.state);
-
           // First try to use state from navigation
           if (location.state?.questions && location.state?.board) {
-            console.log("Using questions and board from navigation state");
             setQuestions(location.state.questions);
             setBoard(location.state.board);
             setGameStarted(true);
@@ -149,7 +130,6 @@ const TicTacToe = () => {
 
           // If no navigation state, fetch from server
           const state = await get(`/api/gameroom/${gameCode}`);
-          console.log("Received game state from server:", state);
 
           if (state && !state.error) {
             if (state.questions && state.board) {
@@ -178,9 +158,7 @@ const TicTacToe = () => {
   // Update stats for single player mode
   const updateStats = async (won) => {
     try {
-      console.log("winning and updating stats");
       const user = await get("/api/whoami");
-      console.log(user._id);
       if (!user._id) {
         console.error("User not logged in");
         return;
@@ -202,7 +180,6 @@ const TicTacToe = () => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             setGameOver(true);
-            console.log("Game over due to time out");
             setWinner(null); // No winner if time runs out
             // Update stats for loss due to timeout
             updateStats(false);
@@ -326,7 +303,6 @@ const TicTacToe = () => {
         if (!socket || !mounted) return;
 
         socketInstance = socket;
-        console.log("Joining game room:", gameCode, "as user:", userInfo._id);
         socket.emit("join room", {
           gameCode,
           user: {
@@ -355,7 +331,6 @@ const TicTacToe = () => {
 
         socket.on("cell:claimed", ({ index, symbol }) => {
           if (!mounted) return;
-          console.log("Cell claimed:", index, "by", symbol);
           setBoard((prevBoard) => {
             const newBoard = [...prevBoard];
             if (newBoard[index]) {
@@ -383,7 +358,6 @@ const TicTacToe = () => {
 
         socket.on("game:update", ({ board, currentPlayer, winner }) => {
           if (!mounted) return;
-          console.log("Game updated:", { board, currentPlayer, winner });
           if (board) setBoard(board);
           if (currentPlayer) setCurrentPlayer(currentPlayer);
           if (winner) setWinner(winner);
@@ -391,7 +365,6 @@ const TicTacToe = () => {
 
         socket.on("game:over", ({ winner, gameOver, board }) => {
           if (!mounted) return;
-          console.log("Game over, winner:", winner);
           setWinner(winner);
           setGameOver(gameOver);
           if (board) setBoard(board);
@@ -458,34 +431,19 @@ const TicTacToe = () => {
       <div className="category-select-container">
         <h2>Select Category</h2>
         <div className="category-buttons">
-          <button
-            className="category-button"
-            onClick={() => setCategory("easy_arithmetic")}
-          >
+          <button className="category-button" onClick={() => setCategory("easy_arithmetic")}>
             Easy Arithmetic
           </button>
-          <button
-            className="category-button"
-            onClick={() => setCategory("hard_arithmetic")}
-          >
+          <button className="category-button" onClick={() => setCategory("hard_arithmetic")}>
             Hard Arithmetic
           </button>
-          <button
-            className="category-button"
-            onClick={() => setCategory("science")}
-          >
+          <button className="category-button" onClick={() => setCategory("science")}>
             Science
           </button>
-          <button
-            className="category-button"
-            onClick={() => setCategory("history")}
-          >
+          <button className="category-button" onClick={() => setCategory("history")}>
             History
           </button>
-          <button
-            className="category-button"
-            onClick={() => setCategory("literature")}
-          >
+          <button className="category-button" onClick={() => setCategory("literature")}>
             Literature
           </button>
         </div>

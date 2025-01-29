@@ -18,16 +18,11 @@ const GameCountdown = ({ gameCode, category, initialState, playerSymbol }) => {
 
     const startCountdown = () => {
       if (!mounted || countdownStarted.current) return;
-      
-      console.log("Starting countdown with:", {
-        gameState: gameStateRef.current,
-        symbol: playerSymbol
-      });
+
       countdownStarted.current = true;
 
       countdownInterval = setInterval(() => {
         setCount((prev) => {
-          console.log("Countdown:", prev);
           if (prev <= 1) {
             clearInterval(countdownInterval);
             return 0;
@@ -39,14 +34,12 @@ const GameCountdown = ({ gameCode, category, initialState, playerSymbol }) => {
 
     // If we already have game state from props, we can start right away
     if (initialState && !countdownStarted.current) {
-      console.log("Using initial game state:", initialState);
       gameStateRef.current = initialState;
       startCountdown();
     }
 
     socket.on("game:update", ({ board, currentPlayer, winner }) => {
       if (!mounted) return;
-      console.log("Game state updated:", { board, currentPlayer, winner });
       gameStateRef.current = { board, currentPlayer, winner };
     });
 
@@ -61,19 +54,15 @@ const GameCountdown = ({ gameCode, category, initialState, playerSymbol }) => {
 
   useEffect(() => {
     if (count === 0 && gameStateRef.current) {
-      console.log("Navigating to game with state:", {
-        gameState: gameStateRef.current,
-        symbol: playerSymbol
-      });
       navigate(`/tictactoe/game/${gameCode}`, {
         state: {
           mode: "two-player",
           gameCode,
           category,
           gameState: gameStateRef.current,
-          symbol: playerSymbol
+          symbol: playerSymbol,
         },
-        replace: true
+        replace: true,
       });
     }
   }, [count, navigate, gameCode, category, playerSymbol]);

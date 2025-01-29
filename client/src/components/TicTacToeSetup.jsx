@@ -30,10 +30,8 @@ const TicTacToeSetup = () => {
   const handleCreateRoom = async () => {
     try {
       setLoading(true);
-      console.log("Creating room with category:", selectedCategory);
 
       const response = await post("/api/gameroom/create", { category: selectedCategory });
-      console.log("Room creation response:", response);
 
       if (!response.gameCode) {
         throw new Error("No game code received from server");
