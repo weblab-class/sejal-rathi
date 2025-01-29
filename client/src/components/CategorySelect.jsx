@@ -1,23 +1,60 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "./context/ThemeContext";
 import "./CategorySelect.css";
 
 const CategorySelect = () => {
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState("easy");
+  const { isDarkMode } = useTheme();
+
+  const [selectedCategory, setSelectedCategory] = useState("easy_arithmetic");
   const [timeLimit, setTimeLimit] = useState(30); // Default 30 seconds
 
+  const categories = [
+    {
+      id: "easy_arithmetic",
+      name: "Easy Arithmetic",
+      description: "Basic addition, subtraction, multiplication, and division",
+      icon: "➕",
+    },
+    {
+      id: "medium_arithmetic",
+      name: "Medium Arithmetic",
+      description: "More challenging arithmetic problems with larger numbers",
+      icon: "✖️",
+    },
+    {
+      id: "difficult_arithmetic",
+      name: "Difficult Arithmetic",
+      description: "Complex arithmetic problems with multi-digit numbers",
+      icon: "➗",
+    },
+    {
+      id: "word_problems",
+      name: "Word Problems",
+      description: "Real-world math problems that require problem-solving skills",
+      icon: "📝",
+    },
+  ];
+
   const handleCategoryChange = (event) => {
+    console.log("Category changed to:", event.target.value);
     setSelectedCategory(event.target.value);
   };
 
   const handleTimeLimitChange = (event) => {
+    console.log("Time limit changed to:", event.target.value);
     setTimeLimit(parseInt(event.target.value));
   };
 
   const startGame = () => {
-    // Convert timeLimit to minutes for consistency
-    navigate("/tictactoe/game", {
+    console.log("Starting game with:", {
+      category: selectedCategory,
+      mode: "single",
+      timeLimit: timeLimit / 60,
+    });
+
+    navigate("/tictactoe/game/single", {
       state: {
         category: selectedCategory,
         mode: "single",
@@ -28,7 +65,7 @@ const CategorySelect = () => {
   };
 
   return (
-    <div className="category-select-wrapper">
+    <div className={`category-select-wrapper ${isDarkMode ? "dark" : "light"}`}>
       <h1>Tic Tac Toe</h1>
       <div className="category-select-container">
         <h2>Select a Category</h2>
@@ -36,9 +73,10 @@ const CategorySelect = () => {
           <label>
             Category:
             <select value={selectedCategory} onChange={handleCategoryChange}>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
+              <option value="easy_arithmetic">Easy Arithmetic</option>
+              <option value="medium_arithmetic">Medium Arithmetic</option>
+              <option value="difficult_arithmetic">Difficult Arithmetic</option>
+              <option value="word_problems">Word Problems</option>
             </select>
           </label>
         </div>
@@ -51,6 +89,10 @@ const CategorySelect = () => {
               <option value="30">30</option>
               <option value="45">45</option>
               <option value="60">60</option>
+              <option value="75">75</option>
+              <option value="90">90</option>
+              <option value="120">120</option>
+              <option value="150">150</option>
             </select>
           </label>
         </div>

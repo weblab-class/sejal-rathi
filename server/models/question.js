@@ -6,13 +6,13 @@ const QuestionSchema = new mongoose.Schema({
     required: true,
   },
   answer: {
-    type: mongoose.Schema.Types.Mixed, // Can be String or Number
+    type: Number, // Changed to Number since all answers will be integers
     required: true,
   },
   category: {
     type: String,
     required: true,
-    enum: ["easy", "difficult", "hard", "calculus", "word"],
+    enum: ["easy_arithmetic", "medium_arithmetic", "difficult_arithmetic", "word_problems"],
   },
   createdAt: {
     type: Date,

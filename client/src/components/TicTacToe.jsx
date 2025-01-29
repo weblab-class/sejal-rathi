@@ -25,8 +25,8 @@ const TicTacToe = () => {
   const { isDarkMode } = useTheme();
 
   const [userId, setUserId] = useState(null);
-  const [modeState, setMode] = useState(initialMode || (gameCode ? "two-player" : "single"));
-  const [category, setCategory] = useState(initialCategory || "easy");
+  const [modeState, setMode] = useState(initialMode || (gameCode === "single" ? "single" : "two-player"));
+  const [category, setCategory] = useState(initialCategory || "easy_arithmetic");
   const [timeLeft, setTimeLeft] = useState((timeLimit || 5) * 60);
   const [questionsState, setQuestions] = useState(questions || []);
   const [board, setBoard] = useState(initialBoard || Array(9).fill(null));
@@ -64,10 +64,31 @@ const TicTacToe = () => {
     const loadQuestions = async () => {
       if (modeState === "single") {
         try {
-          console.log("Loading questions for single player, category:", category);
-          const fetchedQuestions = await get("/api/questions/" + category);
+          console.log("Starting to load questions...");
+          console.log("Current state:", {
+            modeState,
+            category,
+            gameStarted,
+            loading
+          });
+
+          // Make sure we have a category before making the request
+          if (!category) {
+            console.error("No category selected");
+            setError("No category selected");
+            setLoading(false);
+            return;
+          }
+
+          // Log the exact request we're about to make
+          const requestUrl = `/api/questions?category=${encodeURIComponent(category)}`;
+          console.log("Making API call to:", requestUrl);
+          
+          const fetchedQuestions = await get(requestUrl);
+          console.log("Received questions:", fetchedQuestions);
 
           if (fetchedQuestions && fetchedQuestions.length > 0) {
+            console.log("Setting up board with questions");
             setQuestions(fetchedQuestions);
             const newBoard = Array(9)
               .fill()
@@ -80,18 +101,31 @@ const TicTacToe = () => {
             setBoard(newBoard);
             setGameStarted(true);
             setLoading(false);
+            console.log("Board setup complete");
           } else {
+            console.error("No questions returned from API");
             throw new Error("No questions available");
           }
         } catch (err) {
           console.error("Error loading questions:", err);
+          console.error("Error details:", {
+            message: err.message,
+            response: err.response,
+            status: err.response?.status
+          });
           setError("Failed to load questions. Please try again.");
+          setLoading(false);
         }
+      } else {
+        console.log("Not loading questions - not in single player mode");
+        setLoading(false);
       }
     };
 
-    loadQuestions();
-  }, [modeState, category]);
+    if (gameStarted) {
+      loadQuestions();
+    }
+  }, [modeState, category, gameStarted]);
 
   // Load game state on mount
   useEffect(() => {

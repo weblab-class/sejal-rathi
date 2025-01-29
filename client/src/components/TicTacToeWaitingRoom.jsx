@@ -14,7 +14,7 @@ const TicTacToeWaitingRoom = () => {
   const [error, setError] = useState("");
   const [players, setPlayers] = useState([]);
   const [showCountdown, setShowCountdown] = useState(false);
-  const [category, setCategory] = useState(location.state?.category || "easy");
+  const [category, setCategory] = useState(location.state?.category || "easy_arithmetic");
   const [gameQuestions, setGameQuestions] = useState(null);
   const [playerSymbol, setPlayerSymbol] = useState(null);
   const [gameState, setGameState] = useState(null);
@@ -226,9 +226,10 @@ const TicTacToeWaitingRoom = () => {
             onChange={(e) => setCategory(e.target.value)}
             className="category-select"
           >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
+            <option value="easy_arithmetic">Easy Arithmetic</option>
+            <option value="medium_arithmetic">Medium Arithmetic</option>
+            <option value="difficult_arithmetic">Difficult Arithmetic</option>
+            <option value="word_problems">Word Problems</option>
           </select>
         </div>
       )}

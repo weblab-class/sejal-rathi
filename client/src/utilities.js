@@ -15,7 +15,14 @@ async function fetchWithCredentials(endpoint, options = {}) {
   
   // Always use the backend server URL for auth routes
   const baseUrl = import.meta.env.PROD ? '' : 'http://localhost:3000';
-  const url = `${baseUrl}${cleanEndpoint}`;
+  
+  // Handle query parameters
+  let url = `${baseUrl}${cleanEndpoint}`;
+  if (options.params) {
+    const queryString = new URLSearchParams(options.params).toString();
+    url = `${url}?${queryString}`;
+    delete options.params; // Remove params from options to avoid confusion
+  }
   
   const headers = {
     "Content-Type": "application/json",
@@ -51,7 +58,6 @@ export function post(endpoint, body, options = {}) {
   return fetchWithCredentials(endpoint, {
     method: "POST",
     body: JSON.stringify(body),
-    credentials: 'include',
     ...options,
   });
 }
@@ -60,11 +66,13 @@ export function put(endpoint, body, options = {}) {
   return fetchWithCredentials(endpoint, {
     method: "PUT",
     body: JSON.stringify(body),
-    credentials: 'include',
     ...options,
   });
 }
 
 export function del(endpoint, options = {}) {
-  return fetchWithCredentials(endpoint, { method: "DELETE", credentials: 'include', ...options });
+  return fetchWithCredentials(endpoint, {
+    method: "DELETE",
+    ...options,
+  });
 }

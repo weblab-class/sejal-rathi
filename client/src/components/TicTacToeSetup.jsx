@@ -8,17 +8,16 @@ const TicTacToeSetup = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const [joinCode, setJoinCode] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("easy");
+  const [selectedCategory, setSelectedCategory] = useState("easy_arithmetic");
   const [error, setError] = useState("");
   const [mode, setMode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const categories = [
-    { value: "easy", label: "Easy" },
-    { value: "difficult", label: "Difficult" },
-    { value: "hard", label: "Hard" },
-    { value: "calculus", label: "Calculus" },
-    { value: "word", label: "Word Problems" },
+    { value: "easy_arithmetic", label: "Easy Arithmetic" },
+    { value: "medium_arithmetic", label: "Medium Arithmetic" },
+    { value: "difficult_arithmetic", label: "Difficult Arithmetic" },
+    { value: "word_problems", label: "Word Problems" },
   ];
 
   const handleModeSelect = (selectedMode) => {
@@ -72,7 +71,7 @@ const TicTacToeSetup = () => {
 
       if (response.success) {
         // If we're reconnecting, we might have a different category
-        const category = response.category || "easy";
+        const category = response.category || "easy_arithmetic";
 
         navigate(`/tictactoe/waiting/${formattedCode}`, {
           state: {

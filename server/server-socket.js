@@ -110,19 +110,23 @@ const init = (server, sessionMiddleware) => {
           return;
         }
 
-        // Get random questions from MongoDB
+        // Get random questions from MongoDB using the same query as the API
+        console.log("Querying questions for category:", category);
         const questions = await Question.aggregate([
-          { $match: { category: category } },
-          { $sample: { size: 9 } },
-        ]);
+          { $match: { category } },
+          { $sample: { size: 9 } }
+        ]).exec();
+
+        console.log("Questions received:", questions?.length);
 
         if (!questions || questions.length < 9) {
+          console.error("Not enough questions. Found:", questions?.length);
           throw new Error("Not enough questions available");
         }
 
-        console.log("Retrieved questions from database for category:", category);
+        console.log("Retrieved questions for category:", category);
 
-        // Create board with questions from database
+        // Create board with questions
         const board = questions.map((q) => ({
           value: q.question,
           answer: q.answer,

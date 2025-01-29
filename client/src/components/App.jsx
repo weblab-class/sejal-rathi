@@ -122,6 +122,14 @@ const App = () => {
               }
             />
             <Route
+              path="/tictactoe/game/single"
+              element={
+                <ProtectedRoute>
+                  <TicTacToe />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/tictactoe/game/:gameCode"
               element={
                 <ProtectedRoute>

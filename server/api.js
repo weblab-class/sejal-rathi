@@ -63,16 +63,41 @@ router.post("/disconnectsocket", (req, res) => {
 // |------------------------------|
 
 // Get random questions for a specific category
-router.get("/questions/:category", async (req, res) => {
+router.get("/questions", async (req, res) => {
   try {
+    const category = req.query.category;
+    console.log("API: Received request for questions");
+    console.log("API: Category from query:", category);
+
+    if (!category) {
+      console.error("API: No category provided in query");
+      return res.status(400).send({ error: "Category is required" });
+    }
+
+    console.log("API: Querying database for category:", category);
     const questions = await Question.aggregate([
-      { $match: { category: req.params.category } },
+      { $match: { category: category } },
       { $sample: { size: 9 } }, // Get 9 random questions for the game board
     ]);
+
+    console.log("API: Database query complete");
+    console.log("API: Number of questions found:", questions.length);
+
+    if (!questions || questions.length === 0) {
+      console.error("API: No questions found for category:", category);
+      return res.status(404).send({ error: "No questions found for this category" });
+    }
+
+    if (questions.length < 9) {
+      console.error("API: Not enough questions found. Found:", questions.length);
+      return res.status(404).send({ error: "Not enough questions available" });
+    }
+
+    console.log("API: Sending questions to client");
     res.send(questions);
   } catch (err) {
-    console.log(`Failed to get questions: ${err}`);
-    res.status(500).send({ msg: "Failed to get questions" });
+    console.error("API: Error getting questions:", err);
+    res.status(500).send({ error: "Failed to get questions" });
   }
 });
 
