@@ -38,22 +38,14 @@ const CategorySelect = () => {
   ];
 
   const handleCategoryChange = (event) => {
-    console.log("Category changed to:", event.target.value);
     setSelectedCategory(event.target.value);
   };
 
   const handleTimeLimitChange = (event) => {
-    console.log("Time limit changed to:", event.target.value);
     setTimeLimit(parseInt(event.target.value));
   };
 
   const startGame = () => {
-    console.log("Starting game with:", {
-      category: selectedCategory,
-      mode: "single",
-      timeLimit: timeLimit / 60,
-    });
-
     navigate("/tictactoe/game/single", {
       state: {
         category: selectedCategory,

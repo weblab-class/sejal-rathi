@@ -123,7 +123,7 @@ const ConnectionsGame = () => {
       setAttempts(4);
       setSolvedCategories([]);
       setSelectedNumbers([]);
-      setMessage("Select four numbers that you think belong together!");
+      setMessage("Select four numbers that are mathematically related!");
     } catch (error) {
       console.error("Error starting game:", error);
       setError("Failed to load game data");
@@ -456,10 +456,8 @@ const ConnectionsGame = () => {
 
     // Special handling for sequence categories
     if (category.name.toLowerCase().includes("sequence")) {
-      console.log("found sequence", category.name);
       // For sequence categories, select 4 consecutive elements that don't overlap
       const numbers = [...category.sampleNumbers];
-      console.log("Available numbers:", numbers);
 
       // Try different starting points until we find 4 consecutive numbers that don't overlap
       let validSequenceFound = false;
@@ -484,11 +482,8 @@ const ConnectionsGame = () => {
       }
 
       if (!validSequenceFound) {
-        console.log("Could not find non-overlapping sequence");
         return null; // Signal that we need to try a different category
       }
-
-      console.log("Selected sequence:", selectedNumbers);
     } else {
       // For non-sequence categories, randomly select 4 non-overlapping numbers
       const numbers = [...category.sampleNumbers];
@@ -509,7 +504,6 @@ const ConnectionsGame = () => {
       }
 
       if (selectedNumbers.length < 4) {
-        console.log("Could not find enough non-overlapping numbers");
         return null; // Signal that we need to try a different category
       }
     }
@@ -595,10 +589,7 @@ const ConnectionsGame = () => {
           {!gameOver && renderRemainingNumbers()}
 
           {selectedNumbers.length === 4 && !gameOver && (
-            <button
-              className="submit-button"
-              onClick={handleSubmit}
-            >
+            <button className="submit-button" onClick={handleSubmit}>
               Submit
             </button>
           )}
