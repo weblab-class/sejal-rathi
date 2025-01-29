@@ -15,12 +15,14 @@ body {
 }
 
 .home-container {
-  display: flex;
   min-height: 100vh;
-  position: relative;
-  overflow: hidden;
-  justify-content: center;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #111344 0%, #1a237e 100%);
+  color: white;
+  padding: 2rem;
 }
 
 .content {
