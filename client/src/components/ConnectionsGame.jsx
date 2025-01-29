@@ -329,6 +329,7 @@ const ConnectionsGame = () => {
               number.solved ? `solved-${number.categoryLevel}` : ""
             } ${number.revealed ? "revealed" : ""}`}
             onClick={() => handleNumberClick(index)}
+            onMouseLeave={(e) => e.target.blur()}
             disabled={gameOver || number.solved}
           >
             {number.value}
@@ -521,6 +522,23 @@ const ConnectionsGame = () => {
   };
 
   const navigate = useNavigate();
+
+  // Add useEffect for keyboard handling
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.key === "Enter" && selectedNumbers.length === 4) {
+        event.preventDefault(); // Prevent default Enter behavior
+        checkSelection();
+        // Remove focus from any active element
+        if (document.activeElement) {
+          document.activeElement.blur();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress); // Changed from keypress to keydown
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [selectedNumbers, checkSelection]);
 
   if (!gameStarted) {
     return (
