@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound.jsx";
 import ConnectionsGame from "./ConnectionsGame";
 import CategorySelect from "./CategorySelect";
 import Nerdle from "./Nerdle";
+import ProtectedRoute from "./ProtectedRoute";
 
 import { ThemeProvider } from "./context/ThemeContext";
 import { SoundProvider } from "./context/SoundContext";
@@ -79,31 +80,71 @@ const App = () => {
           )}
           <Routes>
             <Route path="/" element={<Home userId={userId} handleLogin={handleLogin} />} />
-            <Route path="/games" element={<GameSelect />} />
-            <Route path="/nerdle" element={<Nerdle />} />
+            <Route 
+              path="/games" 
+              element={
+                <ProtectedRoute>
+                  <GameSelect />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/nerdle" 
+              element={
+                <ProtectedRoute>
+                  <Nerdle />
+                </ProtectedRoute>
+              } 
+            />
             {/* TicTacToe Routes */}
             <Route
               path="/tictactoe/setup"
-              element={<TicTacToeSetup />}
+              element={
+                <ProtectedRoute>
+                  <TicTacToeSetup />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/tictactoe/category-select"
-              element={<CategorySelect />}
+              element={
+                <ProtectedRoute>
+                  <CategorySelect />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/tictactoe/waiting/:gameCode"
-              element={<TicTacToeWaitingRoom />}
+              element={
+                <ProtectedRoute>
+                  <TicTacToeWaitingRoom />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/tictactoe/game/:gameCode"
-              element={<TicTacToe />}
+              element={
+                <ProtectedRoute>
+                  <TicTacToe />
+                </ProtectedRoute>
+              }
             />
             <Route
-              path="/tictactoe/game"
-              element={<TicTacToe />}
+              path="/connections"
+              element={
+                <ProtectedRoute>
+                  <ConnectionsGame />
+                </ProtectedRoute>
+              }
             />
-            <Route path="/profile" element={<Profile userId={userId} />} />
-            <Route path="/connections" element={<ConnectionsGame />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

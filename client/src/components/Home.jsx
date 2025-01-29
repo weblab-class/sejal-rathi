@@ -24,9 +24,6 @@ const Home = ({ userId, handleLogin }) => {
             useOneTap
             type="standard"
           />
-          <button className="guest-button" onClick={() => handleLogin({ credential: "guest" })}>
-            Play as Guest
-          </button>
         </div>
       </div>
     </div>

@@ -26,6 +26,7 @@
   color: var(--dark-text);
   margin-bottom: 1.5rem;
   text-align: center;
+  margin-top: 0px;
 }
 
 .stats-grid {
