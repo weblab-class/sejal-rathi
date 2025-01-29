@@ -44,6 +44,21 @@ const TicTacToe = () => {
   const [lastClickedCell, setLastClickedCell] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Load user ID on mount
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const user = await get("/api/whoami");
+        if (user._id) {
+          setUserId(user._id);
+        }
+      } catch (err) {
+        console.error("Error getting user:", err);
+      }
+    };
+    getUser();
+  }, []);
+
   // Load questions for single player mode
   useEffect(() => {
     const loadQuestions = async () => {
@@ -124,6 +139,26 @@ const TicTacToe = () => {
     loadGameState();
   }, [modeState, gameCode, navigate, location.state]);
 
+  // Update stats for single player mode
+  const updateStats = async (won) => {
+    try {
+      console.log("winning and updating stats");
+      const user = await get("/api/whoami");
+      console.log(user._id);
+      if (!user._id) {
+        console.error("User not logged in");
+        return;
+      }
+
+      await post("/api/stats/tictactoesingle", {
+        won,
+        userId: userId,
+      });
+    } catch (err) {
+      console.error("Failed to update stats:", err);
+    }
+  };
+
   // Timer for single player mode
   useEffect(() => {
     if (modeState === "single" && gameStarted && !gameOver && timeLeft > 0) {
@@ -134,9 +169,7 @@ const TicTacToe = () => {
             console.log("Game over due to time out");
             setWinner(null); // No winner if time runs out
             // Update stats for loss due to timeout
-            post("/api/stats/tictactoe", { won: false }).catch((err) =>
-              console.error("Failed to update stats:", err)
-            );
+            updateStats(false);
             return 0;
           }
           return prev - 1;
@@ -185,6 +218,10 @@ const TicTacToe = () => {
     const userAnswer = answer.trim().toLowerCase();
     const index = selectedCell;
 
+    // Close modal immediately
+    setShowModal(false);
+    setAnswer("");
+
     // Check if answer is correct
     if (userAnswer === currentQuestion.answer.toString()) {
       // Update board
@@ -216,11 +253,7 @@ const TicTacToe = () => {
           setGameOver(true);
           setWinner("X");
           // Update stats for win
-          try {
-            await post("/api/stats/tictactoe", { won: true });
-          } catch (err) {
-            console.error("Failed to update stats:", err);
-          }
+          await updateStats(true);
           return;
         }
       }
@@ -229,10 +262,6 @@ const TicTacToe = () => {
       // Clear feedback after 1 second
       setTimeout(() => setFeedback(null), 1000);
     }
-
-    // Clear answer input and close modal
-    setAnswer("");
-    setShowModal(false);
   };
 
   const handleModalClose = () => {
@@ -480,7 +509,9 @@ const TicTacToe = () => {
               />
               <div className="modal-buttons">
                 <button type="submit">Submit</button>
-                <button type="button" onClick={handleModalClose}>Cancel</button>
+                <button type="button" onClick={handleModalClose}>
+                  Cancel
+                </button>
               </div>
             </form>
           </div>

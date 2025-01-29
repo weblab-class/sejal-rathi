@@ -258,6 +258,63 @@ router.post("/stats/tictactoe", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
+router.post("/stats/tictactoesingle", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    // Find user and ensure they exist
+    console.log(req.body);
+    const user = await User.findById(req.body.userId);
+    if (!user) {
+      console.error("User not found:", req.body.userId);
+      return res.status(404).send({ error: "User not found" });
+    }
+    console.log(req.body.userId);
+    console.log(user);
+    // Initialize stats if they don't exist
+    if (!user.tictactoeStats) {
+      console.log("Initializing stats for user:", user._id);
+      user.tictactoeStats = {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        gamesTied: 0,
+        winStreak: 0,
+        currentWinStreak: 0,
+      };
+    }
+
+    result = req.body.won ? "win" : "loss";
+    console.log("Updating stats for user:", user._id, "Result:", result);
+
+    // Update the stats
+    const stats = user.tictactoeStats;
+    stats.gamesPlayed += 1;
+
+    if (result === "win") {
+      stats.gamesWon += 1;
+      stats.currentWinStreak += 1;
+      if (stats.currentWinStreak > stats.winStreak) {
+        stats.winStreak = stats.currentWinStreak;
+      }
+    } else if (result === "loss") {
+      stats.gamesLost += 1;
+      stats.currentWinStreak = 0;
+    } else if (result === "tie") {
+      stats.gamesTied += 1;
+      stats.currentWinStreak = 0;
+    }
+
+    // Mark the stats object as modified and save
+    user.markModified("tictactoeStats");
+    await user.save();
+
+    console.log("Updated stats:", user.tictactoeStats);
+    res.send(user.tictactoeStats);
+  } catch (err) {
+    console.error("Failed to update stats:", err);
+    res.status(500).send({ error: "Failed to update stats" });
+  }
+});
+
 // Get user stats
 router.get("/stats", auth.ensureLoggedIn, async (req, res) => {
   try {
@@ -270,12 +327,12 @@ router.get("/stats", auth.ensureLoggedIn, async (req, res) => {
     res.send({
       tictactoe: user.tictactoeStats || { gamesPlayed: 0, gamesWon: 0 },
       connections: user.connectionsStats || { gamesPlayed: 0, gamesWon: 0 },
-      nerdle: user.nerdleStats || { 
-        gamesPlayed: 0, 
-        gamesWon: 0, 
-        streak: 0, 
-        longestStreak: 0, 
-        averageGuesses: 0 
+      nerdle: user.nerdleStats || {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        streak: 0,
+        longestStreak: 0,
+        averageGuesses: 0,
       },
     });
   } catch (err) {
@@ -288,9 +345,16 @@ router.get("/stats", auth.ensureLoggedIn, async (req, res) => {
 router.post("/stats/:game", auth.ensureLoggedIn, async (req, res) => {
   try {
     const { game } = req.params;
-    const { won, attempts } = req.body;
-    const user = await User.findById(req.user._id);
+    const { won, userId } = req.body;
+    console.log(
+      "Updating stats for user:",
+      userId || req.user._id,
+      "Result:",
+      won ? "win" : "loss"
+    );
 
+    // Use provided userId if available, otherwise fall back to session user
+    const user = await User.findById(userId || req.user._id);
     if (!user) {
       return res.status(404).send({ error: "User not found" });
     }
@@ -313,30 +377,56 @@ router.post("/stats/:game", auth.ensureLoggedIn, async (req, res) => {
 
     // Initialize stats object if it doesn't exist
     if (!user[statsField]) {
-      user[statsField] = { gamesPlayed: 0, gamesWon: 0 };
+      user[statsField] = {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        gamesTied: 0,
+        winStreak: 0,
+        currentWinStreak: 0,
+      };
     }
 
-    // Update basic stats
-    user[statsField].gamesPlayed += 1;
-    if (won) {
-      user[statsField].gamesWon += 1;
-      user[statsField].streak = (user[statsField].streak || 0) + 1;
-      user[statsField].longestStreak = Math.max(
-        user[statsField].streak || 0,
-        user[statsField].longestStreak || 0
-      );
-    } else {
-      user[statsField].streak = 0;
+    // Update Tic Tac Toe specific stats
+    if (game === "tictactoe") {
+      user[statsField].gamesPlayed += 1;
+      if (won) {
+        user[statsField].gamesWon += 1;
+        user[statsField].currentWinStreak += 1;
+        user[statsField].winStreak = Math.max(
+          user[statsField].winStreak,
+          user[statsField].currentWinStreak
+        );
+      } else {
+        user[statsField].gamesLost += 1;
+        user[statsField].currentWinStreak = 0;
+      }
     }
+    // Update other game stats
+    else {
+      user[statsField].gamesPlayed += 1;
+      if (won) {
+        user[statsField].gamesWon += 1;
+        user[statsField].streak = (user[statsField].streak || 0) + 1;
+        user[statsField].longestStreak = Math.max(
+          user[statsField].streak || 0,
+          user[statsField].longestStreak || 0
+        );
+      } else {
+        user[statsField].streak = 0;
+      }
 
-    // Update game-specific stats
-    if (game === "connections" || game === "nerdle") {
-      const attemptsField = game === "nerdle" ? "averageGuesses" : "averageAttempts";
-      const totalAttempts = (user[statsField][attemptsField] || 0) * (user[statsField].gamesPlayed - 1) + attempts;
-      user[statsField][attemptsField] = totalAttempts / user[statsField].gamesPlayed;
+      if (req.body.attempts && (game === "connections" || game === "nerdle")) {
+        const attemptsField = game === "nerdle" ? "averageGuesses" : "averageAttempts";
+        const totalAttempts =
+          (user[statsField][attemptsField] || 0) * (user[statsField].gamesPlayed - 1) +
+          req.body.attempts;
+        user[statsField][attemptsField] = totalAttempts / user[statsField].gamesPlayed;
+      }
     }
 
     await user.save();
+    console.log("Updated stats:", user[statsField]);
     res.send(user[statsField]);
   } catch (err) {
     console.error("Error updating stats:", err);
@@ -344,7 +434,6 @@ router.post("/stats/:game", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
-// Get user stats
 router.get("/user/stats", auth.ensureLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -446,11 +535,11 @@ router.post("/gameroom/create", auth.ensureLoggedIn, async (req, res) => {
     console.log("New room object:", newRoom);
     const savedRoom = await newRoom.save();
     console.log("Game room created:", savedRoom);
-    
-    res.send({ 
+
+    res.send({
       gameCode: savedRoom.gameCode,
       category: savedRoom.category,
-      isHost: true
+      isHost: true,
     });
   } catch (err) {
     console.error("Error in /gameroom/create:", err);
@@ -476,9 +565,7 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
     }
 
     // Check if user is already in the room (using database ID)
-    const existingPlayer = room.players.find(
-      (p) => p.userId.toString() === user._id.toString()
-    );
+    const existingPlayer = room.players.find((p) => p.userId.toString() === user._id.toString());
 
     if (existingPlayer) {
       console.log("User reconnecting to room:", gameCode);
@@ -508,7 +595,7 @@ router.post("/gameroom/join", auth.ensureLoggedIn, async (req, res) => {
 
     room.players.push(newPlayer);
     await room.save();
-    
+
     console.log("User joined room successfully. Current players:", room.players);
     res.send({
       success: true,
@@ -538,7 +625,7 @@ router.get("/game", (req, res) => {
       res.send({
         gameStarted: game.gameStarted,
         winner: game.winner,
-        gameOver: game.gameOver
+        gameOver: game.gameOver,
       });
     })
     .catch((err) => {
