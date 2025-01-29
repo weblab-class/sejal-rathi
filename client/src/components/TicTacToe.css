@@ -395,6 +395,63 @@ body.dark .question-content input {
   }
 }
 
+.tic-back-button-container {
+  position: absolute;
+  top: 80px; /* Below navbar */
+  left: 20px;
+}
+
+.tic-back-button {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 8px;
+  transition: transform 0.2s ease;
+  z-index: 10;
+}
+
+.tic-back-button:hover {
+  transform: scale(1.2);
+  color: #666;
+  background-color: #edf2ff;
+}
+
+.category-select-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.category-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.category-button {
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #4a5568;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-button:hover {
+  background-color: #2d3748;
+  transform: translateY(-2px);
+}
+
 @media (max-width: 600px) {
   .game-container {
     padding: 1rem;

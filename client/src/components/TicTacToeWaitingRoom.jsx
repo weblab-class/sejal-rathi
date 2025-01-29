@@ -200,6 +200,11 @@ const TicTacToeWaitingRoom = () => {
 
   return (
     <div className="tictactoe-waiting">
+      <div className="tic-back-button-container">
+        <button className="tic-back-button" onClick={() => navigate("/games")}>
+          ↩
+        </button>
+      </div>
       <h1>Tic Tac Toe Waiting Room</h1>
       <h2>Game Code: {gameCode}</h2>
       {playerSymbol && <div className="tic-player-info">You are Player {playerSymbol}</div>}

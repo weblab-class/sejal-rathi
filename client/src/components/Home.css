@@ -26,6 +26,7 @@ body {
 .content {
   text-align: center;
   z-index: 1;
+  transform: translateY(-10vh); /* Move content up by 10% of viewport height instead of 15% */
 }
 
 .content h1 {

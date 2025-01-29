@@ -49,98 +49,132 @@ const Profile = () => {
   }, [user]);
 
   if (loading) {
-    return <div className="profile-container">Loading...</div>;
+    return (
+      <div>
+        <div className="prof-back-button-container">
+          <button className="prof-back-button" onClick={() => navigate("/games")}>
+            ↩
+          </button>
+        </div>
+        <div className="profile-container">Loading...</div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="profile-container error">{error}</div>;
+    return (
+      <div>
+        <div className="prof-back-button-container">
+          <button className="prof-back-button" onClick={() => navigate("/games")}>
+            ↩
+          </button>
+        </div>
+        <div className="profile-container error">{error}</div>
+      </div>
+    );
   }
 
   if (!stats) {
-    return <div className="profile-container">No stats available.</div>;
+    return (
+      <div>
+        <div className="prof-back-button-container">
+          <button className="prof-back-button" onClick={() => navigate("/games")}>
+            ↩
+          </button>
+        </div>
+        <div className="profile-container">No stats available.</div>
+      </div>
+    );
   }
 
   return (
-    <div className="profile-container">
-      <h1>Profile</h1>
-      
-      <div className="stats-section">
-        <h2>Tic Tac Toe Stats</h2>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <h3>Games Played</h3>
-            <p>{stats.tictactoe?.gamesPlayed || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Games Won</h3>
-            <p>{stats.tictactoe?.gamesWon || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Win Rate</h3>
-            <p>
-              {stats.tictactoe?.gamesPlayed
-                ? Math.round((stats.tictactoe.gamesWon / stats.tictactoe.gamesPlayed) * 100)
-                : 0}
-              %
-            </p>
+    <div>
+      <div className="prof-back-button-container">
+        <button className="prof-back-button" onClick={() => navigate("/games")}>
+          ↩
+        </button>
+      </div>
+      <div className="profile-container">
+        <h1>Profile</h1>
+
+        <div className="stats-section">
+          <h2>Tic Tac Toe Stats</h2>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Games Played</h3>
+              <p>{stats.tictactoe?.gamesPlayed || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Games Won</h3>
+              <p>{stats.tictactoe?.gamesWon || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Win Rate</h3>
+              <p>
+                {stats.tictactoe?.gamesPlayed
+                  ? Math.round((stats.tictactoe.gamesWon / stats.tictactoe.gamesPlayed) * 100)
+                  : 0}
+                %
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="stats-section">
-        <h2>Math-nections Stats</h2>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <h3>Games Played</h3>
-            <p>{stats.connections?.gamesPlayed || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Games Won</h3>
-            <p>{stats.connections?.gamesWon || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Win Rate</h3>
-            <p>
-              {stats.connections?.gamesPlayed
-                ? Math.round((stats.connections.gamesWon / stats.connections.gamesPlayed) * 100)
-                : 0}
-              %
-            </p>
+        <div className="stats-section">
+          <h2>Math-nections Stats</h2>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Games Played</h3>
+              <p>{stats.connections?.gamesPlayed || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Games Won</h3>
+              <p>{stats.connections?.gamesWon || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Win Rate</h3>
+              <p>
+                {stats.connections?.gamesPlayed
+                  ? Math.round((stats.connections.gamesWon / stats.connections.gamesPlayed) * 100)
+                  : 0}
+                %
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="stats-section">
-        <h2>Nerdle Stats</h2>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <h3>Games Played</h3>
-            <p>{stats.nerdle?.gamesPlayed || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Games Won</h3>
-            <p>{stats.nerdle?.gamesWon || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Win Rate</h3>
-            <p>
-              {stats.nerdle?.gamesPlayed
-                ? Math.round((stats.nerdle.gamesWon / stats.nerdle.gamesPlayed) * 100)
-                : 0}
-              %
-            </p>
-          </div>
-          <div className="stat-card">
-            <h3>Current Streak</h3>
-            <p>{stats.nerdle?.streak || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Longest Streak</h3>
-            <p>{stats.nerdle?.longestStreak || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Avg. Guesses</h3>
-            <p>{stats.nerdle?.averageGuesses?.toFixed(1) || "0.0"}</p>
+        <div className="stats-section">
+          <h2>Nerdle Stats</h2>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Games Played</h3>
+              <p>{stats.nerdle?.gamesPlayed || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Games Won</h3>
+              <p>{stats.nerdle?.gamesWon || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Win Rate</h3>
+              <p>
+                {stats.nerdle?.gamesPlayed
+                  ? Math.round((stats.nerdle.gamesWon / stats.nerdle.gamesPlayed) * 100)
+                  : 0}
+                %
+              </p>
+            </div>
+            <div className="stat-card">
+              <h3>Current Streak</h3>
+              <p>{stats.nerdle?.streak || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Longest Streak</h3>
+              <p>{stats.nerdle?.longestStreak || 0}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Avg. Guesses</h3>
+              <p>{stats.nerdle?.averageGuesses?.toFixed(1) || "0.0"}</p>
+            </div>
           </div>
         </div>
       </div>

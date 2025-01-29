@@ -105,6 +105,11 @@ const TicTacToeSetup = () => {
 
   return (
     <div className={`setup-container ${isDarkMode ? "dark" : "light"}`}>
+      <div className="tic-back-button-container">
+        <button className="tic-back-button" onClick={() => navigate("/games")}>
+          ↩
+        </button>
+      </div>
       <h1>Tic Tac Toe Game Setup</h1>
       <div className="setup-box">
         <div className="setup-options">

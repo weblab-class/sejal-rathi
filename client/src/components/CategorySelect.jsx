@@ -65,39 +65,47 @@ const CategorySelect = () => {
   };
 
   return (
-    <div className={`category-select-wrapper ${isDarkMode ? "dark" : "light"}`}>
-      <h1>Tic Tac Toe</h1>
-      <div className="category-select-container">
-        <h2>Select a Category</h2>
-        <div className="select-group">
-          <label>
-            Category:
-            <select value={selectedCategory} onChange={handleCategoryChange}>
-              <option value="easy_arithmetic">Easy Arithmetic</option>
-              <option value="medium_arithmetic">Medium Arithmetic</option>
-              <option value="difficult_arithmetic">Difficult Arithmetic</option>
-              <option value="word_problems">Word Problems</option>
-            </select>
-          </label>
-        </div>
+    <div>
+      <div className="tic-back-button-container">
+        <button className="tic-back-button" onClick={() => navigate("/games")}>
+          ↩
+        </button>
+      </div>
+      
+      <div className={`category-select-wrapper ${isDarkMode ? "dark" : "light"}`}>
+        <h1>Tic Tac Toe</h1>
+        <div className="tic-category-select-container">
+          <h2>Select a Category</h2>
+          <div className="select-group">
+            <label>
+              Category:
+              <select value={selectedCategory} onChange={handleCategoryChange}>
+                <option value="easy_arithmetic">Easy Arithmetic</option>
+                <option value="medium_arithmetic">Medium Arithmetic</option>
+                <option value="difficult_arithmetic">Difficult Arithmetic</option>
+                <option value="word_problems">Word Problems</option>
+              </select>
+            </label>
+          </div>
 
-        <div className="select-group">
-          <label>
-            Time Limit (seconds):
-            <select value={timeLimit} onChange={handleTimeLimitChange}>
-              <option value="15">15</option>
-              <option value="30">30</option>
-              <option value="45">45</option>
-              <option value="60">60</option>
-              <option value="75">75</option>
-              <option value="90">90</option>
-              <option value="120">120</option>
-              <option value="150">150</option>
-            </select>
-          </label>
-        </div>
+          <div className="select-group">
+            <label>
+              Time Limit (seconds):
+              <select value={timeLimit} onChange={handleTimeLimitChange}>
+                <option value="15">15</option>
+                <option value="30">30</option>
+                <option value="45">45</option>
+                <option value="60">60</option>
+                <option value="75">75</option>
+                <option value="90">90</option>
+                <option value="120">120</option>
+                <option value="150">150</option>
+              </select>
+            </label>
+          </div>
 
-        <button onClick={startGame}>Start Game</button>
+          <button onClick={startGame}>Start Game</button>
+        </div>
       </div>
     </div>
   );

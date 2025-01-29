@@ -525,6 +525,11 @@ const ConnectionsGame = () => {
   if (!gameStarted) {
     return (
       <div className="connections-setup">
+        <div className="back-button-container">
+          <button className="back-button" onClick={() => navigate("/games")}>
+            ↩
+          </button>
+        </div>
         <h1>Math-nections</h1>
         <div className="setup-content">
           <h2>Select Difficulty</h2>
@@ -571,11 +576,10 @@ const ConnectionsGame = () => {
           {renderSolvedCategories()}
           {!gameOver && renderRemainingNumbers()}
 
-          {selectedNumbers.length > 0 && !gameOver && (
+          {selectedNumbers.length === 4 && !gameOver && (
             <button
               className="submit-button"
               onClick={handleSubmit}
-              disabled={selectedNumbers.length !== 4}
             >
               Submit
             </button>

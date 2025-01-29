@@ -25,7 +25,9 @@ const TicTacToe = () => {
   const { isDarkMode } = useTheme();
 
   const [userId, setUserId] = useState(null);
-  const [modeState, setMode] = useState(initialMode || (gameCode === "single" ? "single" : "two-player"));
+  const [modeState, setMode] = useState(
+    initialMode || (gameCode === "single" ? "single" : "two-player")
+  );
   const [category, setCategory] = useState(initialCategory || "easy_arithmetic");
   const [timeLeft, setTimeLeft] = useState((timeLimit || 5) * 60);
   const [questionsState, setQuestions] = useState(questions || []);
@@ -69,7 +71,7 @@ const TicTacToe = () => {
             modeState,
             category,
             gameStarted,
-            loading
+            loading,
           });
 
           // Make sure we have a category before making the request
@@ -83,7 +85,7 @@ const TicTacToe = () => {
           // Log the exact request we're about to make
           const requestUrl = `/api/questions?category=${encodeURIComponent(category)}`;
           console.log("Making API call to:", requestUrl);
-          
+
           const fetchedQuestions = await get(requestUrl);
           console.log("Received questions:", fetchedQuestions);
 
@@ -111,7 +113,7 @@ const TicTacToe = () => {
           console.error("Error details:", {
             message: err.message,
             response: err.response,
-            status: err.response?.status
+            status: err.response?.status,
           });
           setError("Failed to load questions. Please try again.");
           setLoading(false);
@@ -451,6 +453,46 @@ const TicTacToe = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const renderCategorySelect = () => {
+    return (
+      <div className="category-select-container">
+        <h2>Select Category</h2>
+        <div className="category-buttons">
+          <button
+            className="category-button"
+            onClick={() => setCategory("easy_arithmetic")}
+          >
+            Easy Arithmetic
+          </button>
+          <button
+            className="category-button"
+            onClick={() => setCategory("hard_arithmetic")}
+          >
+            Hard Arithmetic
+          </button>
+          <button
+            className="category-button"
+            onClick={() => setCategory("science")}
+          >
+            Science
+          </button>
+          <button
+            className="category-button"
+            onClick={() => setCategory("history")}
+          >
+            History
+          </button>
+          <button
+            className="category-button"
+            onClick={() => setCategory("literature")}
+          >
+            Literature
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
@@ -480,6 +522,11 @@ const TicTacToe = () => {
 
   return (
     <div className={`game-container ${isDarkMode ? "dark" : "light"}`}>
+      <div className="tic-back-button-container">
+        <button className="tic-back-button" onClick={() => navigate("/games")}>
+          ↩
+        </button>
+      </div>
       <h1>Tic Tac Toe</h1>
       <div className="category">Category: {category}</div>
 

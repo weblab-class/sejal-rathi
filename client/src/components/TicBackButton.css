@@ -1,0 +1,25 @@
+.tic-back-button-container {
+  position: absolute;
+  top: 80px; /* Below navbar */
+  left: 20px;
+}
+
+.tic-back-button {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 8px;
+  transition: transform 0.2s ease;
+  z-index: 10;
+}
+
+.tic-back-button:hover {
+  transform: scale(1.2);
+  color: #666;
+  background-color: #edf2ff;
+}
